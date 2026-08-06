@@ -25,6 +25,30 @@ export function validateDisplayName(name) {
   return null;
 }
 
+export function validateBannerTagline(tagline) {
+  if (tagline === null || tagline === undefined || tagline === '') return null;
+  if (typeof tagline !== 'string') return 'Tagline must be text.';
+  const t = tagline.trim();
+  if (t.length > 120) return 'Tagline must be 120 characters or fewer.';
+  if (/[\u0000-\u001F\u007F]/.test(t)) return 'Tagline has invalid characters.';
+  return null;
+}
+
+export function validateAnnouncements(list) {
+  if (list === null || list === undefined) return null;
+  if (!Array.isArray(list)) return 'Announcements must be a list.';
+  if (list.length > 10) return 'Up to 10 announcements allowed.';
+  for (const a of list) {
+    if (!a || typeof a !== 'object') return 'Invalid announcement.';
+    const title = String(a.title || '').trim();
+    const body = String(a.body || '').trim();
+    if (!title) return 'Each announcement needs a title.';
+    if (title.length > 80) return 'Announcement titles are limited to 80 characters.';
+    if (body.length > 300) return 'Announcement text is limited to 300 characters.';
+  }
+  return null;
+}
+
 export function validatePassword(password) {
   if (typeof password !== 'string') return 'Password is required.';
   if (password.length < 8) return 'Password must be at least 8 characters.';

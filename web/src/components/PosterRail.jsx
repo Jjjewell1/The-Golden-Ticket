@@ -5,7 +5,7 @@ function cardGap() {
   return Number.parseFloat(size.getPropertyValue('--rail-gap')) || 18;
 }
 
-export default function PosterRail({ items, size = 'tall', auto = 0, className = '' }) {
+export default function PosterRail({ items, size = 'tall', auto = 0, className = '', onSelect }) {
   const trackRef = useRef(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
@@ -82,30 +82,48 @@ export default function PosterRail({ items, size = 'tall', auto = 0, className =
         </button>
       )}
       <div className="rail-track" ref={trackRef}>
-        {items.map((it, i) => (
-          <a key={`${it.id ?? it.name}-${i}`} href={it.href} target="_blank" rel="noreferrer" className={`rail-card ${size}`}>
-            <span className="rail-img">
-              {it.image ? (
-                <img src={it.image} alt={it.title} loading="lazy" />
-              ) : (
-                <span className="rail-fallback" aria-hidden="true">
-                  {it.emoji || '🎬'}
-                </span>
-              )}
-              {it.badge && <span className="rail-badge">{it.badge}</span>}
-              {it.overlay && (
-                <span className="rail-shade">
-                  <span className="rail-overlay-title">{it.title}</span>
-                  {it.overlay && <span className="rail-overlay-text">{it.overlay}</span>}
-                </span>
-              )}
-            </span>
-            <span className="rail-meta">
-              <span className="rail-title">{it.title}</span>
-              {it.subtitle && <span className="rail-sub">{it.subtitle}</span>}
-            </span>
-          </a>
-        ))}
+        {items.map((it, i) => {
+          const inner = (
+            <>
+              <span className="rail-img">
+                {it.image ? (
+                  <img src={it.image} alt={it.title} loading="lazy" />
+                ) : (
+                  <span className="rail-fallback" aria-hidden="true">
+                    {it.emoji || '🎬'}
+                  </span>
+                )}
+                {it.badge && <span className="rail-badge">{it.badge}</span>}
+                {it.overlay && (
+                  <span className="rail-shade">
+                    <span className="rail-overlay-title">{it.title}</span>
+                    {it.overlay && <span className="rail-overlay-text">{it.overlay}</span>}
+                  </span>
+                )}
+              </span>
+              <span className="rail-meta">
+                <span className="rail-title">{it.title}</span>
+                {it.subtitle && <span className="rail-sub">{it.subtitle}</span>}
+              </span>
+            </>
+          );
+
+          return onSelect ? (
+            <button
+              key={`${it.id ?? it.name}-${i}`}
+              type="button"
+              className={`rail-card rail-card-btn ${size}`}
+              onClick={() => onSelect(it)}
+              aria-label={`View details for ${it.title}`}
+            >
+              {inner}
+            </button>
+          ) : (
+            <a key={`${it.id ?? it.name}-${i}`} href={it.href} target="_blank" rel="noreferrer" className={`rail-card ${size}`}>
+              {inner}
+            </a>
+          );
+        })}
       </div>
       {canNext && (
         <button type="button" className="rail-btn rail-next" onClick={next} aria-label="Next">

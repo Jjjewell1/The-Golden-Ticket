@@ -13,6 +13,7 @@ import AppCard from '../components/AppCard.jsx';
 import PosterRail from '../components/PosterRail.jsx';
 import Spotlight from '../components/Spotlight.jsx';
 import RandomPicks from '../components/RandomPicks.jsx';
+import DetailModal from '../components/DetailModal.jsx';
 import { Reveal, useCountUp, useTilt } from '../lib/useFx.jsx';
 
 const jellyfinUrl = 'https://movies.jewellcore.com';
@@ -135,6 +136,8 @@ function LiveNow({ sessions }) {
 export default function Home() {
   const { loading, config, data, sessions, requests, status, error } = useHomeData();
   const ticketTilt = useTilt(7);
+  const [selected, setSelected] = useState(null);
+  const [selectedKind, setSelectedKind] = useState('movie');
 
   if (loading) {
     return (
@@ -157,6 +160,11 @@ export default function Home() {
     return status.services?.[key] ?? null;
   };
 
+  const openDetail = (kind, item) => {
+    setSelectedKind(kind);
+    setSelected(item);
+  };
+
   const movieRail = movies.slice(1).map((m) => ({
     id: m.id,
     image: m.imageTag ? posterUrl(m.id, m.imageTag) : null,
@@ -165,6 +173,7 @@ export default function Home() {
     badge: 'New',
     overlay: m.overview,
     href: jellyfinUrl,
+    raw: m,
   }));
 
   const seriesRail = series.map((s) => ({
@@ -175,6 +184,7 @@ export default function Home() {
     badge: 'New',
     overlay: s.overview,
     href: jellyfinUrl,
+    raw: s,
   }));
 
   const gameRail = games.slice(0, 10).map((g) => ({
@@ -185,11 +195,23 @@ export default function Home() {
     badge: 'Play',
     emoji: '🎮',
     href: rommUrl,
+    raw: g,
   }));
+
+  const openRail = (kind) => (it) => openDetail(kind, it.raw || it);
+
+  const customBanner = config?.banner?.image || null;
+  const tagline = config?.banner?.tagline || 'Movies, games, and a little bit of magic — all in one place, just for you.';
 
   return (
     <div className="home">
-      <section className="hero">
+      <section className={`hero${customBanner ? ' hero-banner' : ''}`}>
+        {customBanner && (
+          <>
+            <img className="hero-banner-img" src={customBanner} alt="" />
+            <span className="hero-banner-scrim" aria-hidden="true" />
+          </>
+        )}
         <div className="hero-inner">
           <span className="hero-badge hero-anim" style={{ '--d': '0ms' }}>
             <span className="live-dot" /> Your all-access pass has arrived
@@ -203,7 +225,7 @@ export default function Home() {
           </h1>
 
           <p className="hero-tagline hero-anim" style={{ '--d': '240ms' }}>
-            Movies, games, and a little bit of magic — all in one place, just for you.
+            {tagline}
           </p>
 
           <div className="hero-cta hero-anim" style={{ '--d': '360ms' }}>
@@ -216,20 +238,22 @@ export default function Home() {
             </a>
           </div>
 
-          <div className="hero-floaters" aria-hidden="true">
-            <span className="hero-floater" style={{ '--fx': '-7%', '--fy': '6%', '--fd': '0s' }}>
-              🍿
-            </span>
-            <span className="hero-floater" style={{ '--fx': '94%', '--fy': '2%', '--fd': '-1.2s' }}>
-              🎬
-            </span>
-            <span className="hero-floater" style={{ '--fx': '97%', '--fy': '68%', '--fd': '-2s' }}>
-              🕹️
-            </span>
-            <span className="hero-floater" style={{ '--fx': '-5%', '--fy': '74%', '--fd': '-0.6s' }}>
-              🎮
-            </span>
-          </div>
+          {!customBanner && (
+            <div className="hero-floaters" aria-hidden="true">
+              <span className="hero-floater" style={{ '--fx': '-7%', '--fy': '6%', '--fd': '0s' }}>
+                🍿
+              </span>
+              <span className="hero-floater" style={{ '--fx': '94%', '--fy': '2%', '--fd': '-1.2s' }}>
+                🎬
+              </span>
+              <span className="hero-floater" style={{ '--fx': '97%', '--fy': '68%', '--fd': '-2s' }}>
+                🕹️
+              </span>
+              <span className="hero-floater" style={{ '--fx': '-5%', '--fy': '74%', '--fd': '-0.6s' }}>
+                🎮
+              </span>
+            </div>
+          )}
 
           <div className="hero-stats hero-anim" style={{ '--d': '480ms' }}>
             <Stat value={movies.length} label="Movies in" />
@@ -238,17 +262,19 @@ export default function Home() {
             <Stat value={requests ?? 0} label="In the queue" />
           </div>
 
-          <div className="hero-ticket hero-anim" style={{ '--d': '600ms' }}>
-            <div className="hero-ticket-tilt" {...ticketTilt}>
-              <div className="ticket-shape">
-                <div className="ticket-notch ticket-notch-l" />
-                <div className="ticket-body">
-                  <p>Your all-access pass to the Jewellcore server.</p>
+          {!customBanner && (
+            <div className="hero-ticket hero-anim" style={{ '--d': '600ms' }}>
+              <div className="hero-ticket-tilt" {...ticketTilt}>
+                <div className="ticket-shape">
+                  <div className="ticket-notch ticket-notch-l" />
+                  <div className="ticket-body">
+                    <p>Your all-access pass to the Jewellcore server.</p>
+                  </div>
+                  <div className="ticket-notch ticket-notch-r" />
                 </div>
-                <div className="ticket-notch ticket-notch-r" />
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         <Ticker />
@@ -298,7 +324,7 @@ export default function Home() {
         </Reveal>
       )}
 
-      <RandomPicks />
+      <RandomPicks onSelect={openDetail} />
 
       {featured && (
         <Reveal as="section" className="section" delay={60}>
@@ -314,13 +340,14 @@ export default function Home() {
           <Spotlight
             item={{ image: featured.imageTag ? posterUrl(featured.id, featured.imageTag, 600) : null, title: featured.name, year: featured.year, overview: featured.overview }}
             href={jellyfinUrl}
+            onSelect={() => openDetail('movie', featured)}
           />
         </Reveal>
       )}
 
       {movieRail.length > 0 && (
         <Reveal delay={80}>
-          <PosterRail items={movieRail} size="tall" auto={4200} className="rail-inset" />
+          <PosterRail items={movieRail} size="tall" auto={4200} className="rail-inset" onSelect={openRail('movie')} />
         </Reveal>
       )}
 
@@ -332,7 +359,7 @@ export default function Home() {
               <h2 className="section-title">Fresh shows</h2>
             </div>
           </div>
-          <PosterRail items={seriesRail} size="tall" />
+          <PosterRail items={seriesRail} size="tall" onSelect={openRail('movie')} />
         </Reveal>
       )}
 
@@ -347,7 +374,7 @@ export default function Home() {
               All games →
             </Link>
           </div>
-          <PosterRail items={gameRail} size="wide" />
+          <PosterRail items={gameRail} size="wide" onSelect={openRail('game')} />
         </Reveal>
       )}
 
@@ -375,6 +402,8 @@ export default function Home() {
           </Link>
         </div>
       </Reveal>
+
+      <DetailModal item={selected} kind={selectedKind} onClose={() => setSelected(null)} />
     </div>
   );
 }

@@ -4,20 +4,30 @@ import {
   getConfig,
   getOwnerRequests,
   getOwnerUsers,
+  getOwnerSettings,
   postOwnerAddUser,
   postOwnerDecision,
   postOwnerUserAction,
   patchOwnerUser,
+  patchOwnerSettings,
 } from '../lib/api.js';
 import AppCard from '../components/AppCard.jsx';
 import Avatar from '../components/Avatar.jsx';
 import AvatarPicker from '../components/AvatarPicker.jsx';
+import BannerPicker from '../components/BannerPicker.jsx';
 
 function fmt(d) {
   if (!d) return '';
   const date = new Date(d);
   return isNaN(date) ? '' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
+
+const newAnnouncement = () => ({
+  id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  title: '',
+  body: '',
+  enabled: true,
+});
 
 export default function Owner() {
   const { user } = useAuth();
@@ -30,6 +40,11 @@ export default function Owner() {
   const [note, setNote] = useState({});
   const [addForm, setAddForm] = useState({ username: '', email: '', password: '' });
   const [editing, setEditing] = useState(null);
+  const [bannerForm, setBannerForm] = useState({ image: '', tagline: '' });
+  const [announcements, setAnnouncements] = useState([]);
+  const [customBusy, setCustomBusy] = useState(false);
+  const [customSaved, setCustomSaved] = useState(false);
+  const [customError, setCustomError] = useState('');
 
   const isOwner = user?.role === 'owner';
 
@@ -44,9 +59,13 @@ export default function Owner() {
 
   const reload = () => {
     if (isOwner) {
-      Promise.allSettled([getOwnerRequests(), getOwnerUsers()]).then(([r, u]) => {
+      Promise.allSettled([getOwnerRequests(), getOwnerUsers(), getOwnerSettings()]).then(([r, u, s]) => {
         if (r.status === 'fulfilled') setRequests(r.value.requests || []);
         if (u.status === 'fulfilled') setMembers(u.value.users || []);
+        if (s.status === 'fulfilled') {
+          setBannerForm(s.value.banner || { image: '', tagline: '' });
+          setAnnouncements(Array.isArray(s.value.announcements) ? s.value.announcements : []);
+        }
       });
     }
   };
@@ -125,6 +144,25 @@ export default function Owner() {
     }
     setAddForm({ username: '', email: '', password: '' });
     reload();
+  }
+
+  async function saveCustomization(e) {
+    e.preventDefault();
+    setCustomBusy(true);
+    setCustomSaved(false);
+    setCustomError('');
+    const { ok, data } = await patchOwnerSettings({
+      banner: { image: bannerForm.image, tagline: bannerForm.tagline },
+      announcements,
+    });
+    setCustomBusy(false);
+    if (!ok) {
+      setCustomError(data.error || 'Something went wrong.');
+      return;
+    }
+    setBannerForm(data.banner || { image: '', tagline: '' });
+    setAnnouncements(data.announcements || []);
+    setCustomSaved(true);
   }
 
   if (!isOwner) {
@@ -298,6 +336,101 @@ export default function Owner() {
             <AppCard key={app.name} app={app} />
           ))}
         </div>
+      </section>
+
+      <section className="mgmt-section">
+        <h2 className="mgmt-title">🎨 Customize your site</h2>
+        <p className="mgmt-hint">
+          Set a custom banner for the top of the home page, and post announcements for everyone to see.
+        </p>
+
+        {customError && <div className="banner banner-error">{customError}</div>}
+        {customSaved && <div className="banner banner-ok">Your site customizations are live.</div>}
+
+        <form className="signup-form mgmt-form" onSubmit={saveCustomization}>
+          <div className="field">
+            <span className="field-label">Home page banner</span>
+            <BannerPicker value={bannerForm.image} onChange={(image) => setBannerForm((b) => ({ ...b, image }))} />
+          </div>
+
+          <label className="field">
+            <span className="field-label">Banner tagline</span>
+            <input
+              type="text"
+              maxLength={120}
+              placeholder="Movies, games, and a little bit of magic…"
+              value={bannerForm.tagline}
+              onChange={(e) => setBannerForm((b) => ({ ...b, tagline: e.target.value }))}
+            />
+            <span className="field-hint">Shown under the title on the banner. Leave blank for the default.</span>
+          </label>
+
+          <div className="field">
+            <span className="field-label">Announcements</span>
+            <div className="announce-editor">
+              {announcements.length === 0 ? (
+                <p className="mgmt-hint">No announcements yet — add one to post a message on the home page.</p>
+              ) : (
+                announcements.map((a, i) => (
+                  <div key={a.id} className="announce-row">
+                    <div className="announce-row-grid">
+                      <input
+                        type="text"
+                        maxLength={80}
+                        placeholder="Title"
+                        value={a.title}
+                        onChange={(e) =>
+                          setAnnouncements((list) => list.map((x) => (x.id === a.id ? { ...x, title: e.target.value } : x)))
+                        }
+                      />
+                      <input
+                        type="text"
+                        maxLength={300}
+                        placeholder="Message"
+                        value={a.body}
+                        onChange={(e) =>
+                          setAnnouncements((list) => list.map((x) => (x.id === a.id ? { ...x, body: e.target.value } : x)))
+                        }
+                      />
+                    </div>
+                    <div className="announce-row-actions">
+                      <label className="announce-toggle">
+                        <input
+                          type="checkbox"
+                          checked={a.enabled}
+                          onChange={(e) =>
+                            setAnnouncements((list) =>
+                              list.map((x) => (x.id === a.id ? { ...x, enabled: e.target.checked } : x)),
+                            )
+                          }
+                        />
+                        <span>Show</span>
+                      </label>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-small"
+                        onClick={() => setAnnouncements((list) => list.filter((x) => x.id !== a.id))}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+              <button
+                type="button"
+                className="btn btn-ghost btn-small"
+                onClick={() => setAnnouncements((list) => [...list, newAnnouncement()])}
+              >
+                ➕ Add announcement
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" className="btn btn-gold" disabled={customBusy}>
+            {customBusy ? 'Saving…' : 'Save customizations'}
+          </button>
+        </form>
       </section>
     </div>
   );

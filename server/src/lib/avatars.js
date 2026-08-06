@@ -47,3 +47,12 @@ export function validateAvatar(v) {
   if (isDataAvatar(v)) return null;
   return 'Pick an icon from the set, or upload a photo (png/jpeg/webp/gif, under 1.5 MB).';
 }
+
+const URL_RE = /^https?:\/\/\S+$/i;
+
+export function validateBannerImage(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (isDataAvatar(v)) return null;
+  if (typeof v === 'string' && v.length < 2048 && URL_RE.test(v)) return null;
+  return 'Banner must be an uploaded image or a http(s) URL.';
+}

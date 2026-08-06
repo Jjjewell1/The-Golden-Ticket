@@ -1,14 +1,16 @@
 import { Router } from 'express';
 import { config } from '../config.js';
-import { hashPassword, verifyPayload } from '../lib/crypto.js';
+import { hashPassword, verifyPayload, randomToken } from '../lib/crypto.js';
 import { requireOwner } from '../lib/session.js';
 import {
   validateUsername,
   validateEmail,
   validatePassword,
   validateDisplayName,
+  validateBannerTagline,
+  validateAnnouncements,
 } from '../lib/validate.js';
-import { validateAvatar } from '../lib/avatars.js';
+import { validateAvatar, validateBannerImage } from '../lib/avatars.js';
 import { publicUser } from '../lib/sanitize.js';
 import { provision } from '../services/provision.js';
 import { decideRequest } from '../services/decide.js';
@@ -160,6 +162,57 @@ export function ownerRouter({ store, jellyfin, romm, mailer, secret }) {
       ok: true,
       user: publicUser(updated),
       synced,
+    });
+  });
+
+  router.get('/owner/settings', ownerOnly, (req, res) => {
+    res.json({
+      banner: store.getSetting('banner', { image: '', tagline: '' }),
+      announcements: store.getSetting('announcements', []),
+    });
+  });
+
+  router.patch('/owner/settings', ownerOnly, async (req, res) => {
+    const body = req.body || {};
+    const patch = {};
+
+    if ('banner' in body) {
+      const b = body.banner || {};
+      const imgErr = validateBannerImage(b.image);
+      if (imgErr) return res.status(400).json({ error: imgErr });
+      const tagErr = validateBannerTagline(b.tagline);
+      if (tagErr) return res.status(400).json({ error: tagErr });
+      const image = String(b.image || '').trim();
+      const tagline = String(b.tagline || '').trim();
+      patch.banner = image || tagline ? { image, tagline } : null;
+    }
+
+    if ('announcements' in body) {
+      const aErr = validateAnnouncements(body.announcements);
+      if (aErr) return res.status(400).json({ error: aErr });
+      const list = (body.announcements || [])
+        .filter((a) => a && a.title && String(a.title).trim())
+        .map((a) => ({
+          id: a.id || randomToken().slice(0, 12),
+          title: String(a.title || '').trim(),
+          body: String(a.body || '').trim(),
+          enabled: a.enabled !== false,
+        }));
+      patch.announcements = list.length ? list : null;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return res.status(400).json({ error: 'Nothing to update.' });
+    }
+
+    await Promise.all(
+      Object.entries(patch).map(([k, v]) => store.setSetting(k, v)),
+    );
+
+    res.json({
+      ok: true,
+      banner: store.getSetting('banner', { image: '', tagline: '' }),
+      announcements: store.getSetting('announcements', []),
     });
   });
 

@@ -120,6 +120,14 @@ export async function patchOwnerUser(userId, payload) {
   return patchJson(`/api/owner/users/${encodeURIComponent(userId)}`, payload);
 }
 
+export function getOwnerSettings() {
+  return getJson('/api/owner/settings');
+}
+
+export async function patchOwnerSettings(payload) {
+  return patchJson('/api/owner/settings', payload);
+}
+
 export async function verifyOwnerPin(pin) {
   const res = await getJson(`/api/owner/verify?pin=${encodeURIComponent(pin)}`);
   return res.ok;

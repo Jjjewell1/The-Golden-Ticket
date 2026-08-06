@@ -12,13 +12,18 @@ export function apiRouter({ jellyfin, romm, seerr, store, secret, pushover }) {
   const protectedGet = (path, handler) => protectedRouter.get(path, auth, handler);
 
   router.get('/config', (req, res) => {
+    const storedAnnouncements = store.getSetting('announcements', null);
+    const announcements = Array.isArray(storedAnnouncements)
+      ? storedAnnouncements.filter((a) => a && a.enabled)
+      : config.announcements;
     res.json({
       publicUrl: config.publicUrl,
       signupEnabled: !!(config.ticketCode && jellyfin.apiKey && romm.adminUser && romm.adminPassword),
       approvalEnabled: !!pushover.enabled,
       apps: config.apps,
       ownerApps: config.ownerApps,
-      announcements: config.announcements,
+      announcements,
+      banner: store.getSetting('banner', null),
       ownerPinSet: !!config.ownerPin,
       avatars: AVATAR_PALETTE,
     });

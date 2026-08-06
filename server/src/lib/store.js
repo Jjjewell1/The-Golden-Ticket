@@ -6,7 +6,7 @@ export class Store {
   constructor(dir) {
     this.dir = dir;
     this.file = path.join(dir, 'users.json');
-    this.data = { users: [], requests: [], resetTokens: [] };
+    this.data = { users: [], requests: [], resetTokens: [], settings: {} };
     this.writeQueue = Promise.resolve();
   }
 
@@ -19,6 +19,7 @@ export class Store {
           users: Array.isArray(raw.users) ? raw.users : [],
           requests: Array.isArray(raw.requests) ? raw.requests : [],
           resetTokens: Array.isArray(raw.resetTokens) ? raw.resetTokens : [],
+          settings: raw.settings && typeof raw.settings === 'object' ? raw.settings : {},
         };
       } catch (err) {
         console.error('Store: could not parse users.json, starting fresh:', err.message);
@@ -145,5 +146,21 @@ export class Store {
     if (!token) return null;
     if (token.used || token.expiresAt < Date.now()) return null;
     return this.findUserById(token.userId);
+  }
+
+  /* ---------- settings ---------- */
+
+  getSetting(key, fallback = null) {
+    const v = this.data.settings[key];
+    return v === undefined || v === null ? fallback : v;
+  }
+
+  setSetting(key, value) {
+    if (value === null || value === undefined) {
+      delete this.data.settings[key];
+    } else {
+      this.data.settings[key] = value;
+    }
+    return this._save();
   }
 }

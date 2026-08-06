@@ -9,7 +9,7 @@ function movieHref(m) {
   return `${jellyfinUrl}/web/index.html#/details?id=${encodeURIComponent(m.id)}`;
 }
 
-function PickCard({ kind, item }) {
+function PickCard({ kind, item, onSelect }) {
   const isMovie = kind === 'movie';
   if (!item) {
     return (
@@ -29,8 +29,9 @@ function PickCard({ kind, item }) {
   const meta = [isMovie ? item.year : item.platform, ...(item.genres || [])]
     .filter((x) => x !== undefined && x !== null && x !== '')
     .join(' · ');
+  const open = () => onSelect && onSelect(kind, item);
   return (
-    <div className="random-card">
+    <div className={`random-card${onSelect ? ' random-card-clickable' : ''}`} onClick={open}>
       <div className="random-poster">
         {image ? <img src={image} alt={item.name} loading="lazy" /> : <div className="poster-fallback">🎬</div>}
       </div>
@@ -52,7 +53,7 @@ function PickCard({ kind, item }) {
   );
 }
 
-export default function RandomPicks() {
+export default function RandomPicks({ onSelect }) {
   const [picks, setPicks] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -88,8 +89,8 @@ export default function RandomPicks() {
 
       {!loading && anyItem && (
         <div className="random-picks">
-          <PickCard kind="movie" item={picks.movie} />
-          <PickCard kind="game" item={picks.game} />
+          <PickCard kind="movie" item={picks.movie} onSelect={onSelect} />
+          <PickCard kind="game" item={picks.game} onSelect={onSelect} />
         </div>
       )}
 
