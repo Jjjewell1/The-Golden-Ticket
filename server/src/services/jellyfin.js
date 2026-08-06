@@ -29,6 +29,19 @@ export class Jellyfin {
     return ct.includes('application/json') ? res.json() : res;
   }
 
+  mapItem(item) {
+    return {
+      id: item.Id,
+      name: item.Name,
+      type: item.Type,
+      year: item.ProductionYear,
+      overview: item.Overview,
+      genres: item.Genres || [],
+      createdAt: item.DateCreated,
+      imageTag: item.ImageTags?.Primary || null,
+    };
+  }
+
   async getRecentlyAdded(limit = 12, types = ['Movie', 'Series']) {
     const data = await this.request('/Items', {
       query: {
@@ -39,18 +52,39 @@ export class Jellyfin {
         ImageTypeLimit: 1,
         EnableImageTypes: 'Primary',
         IncludeItemTypes: types.join(','),
-        Fields: 'PrimaryImageAspectRatio,DateCreated,Overview,ProductionYear',
+        Fields: 'PrimaryImageAspectRatio,DateCreated,Overview,ProductionYear,Genres',
       },
     });
-    return (data.Items || []).map((item) => ({
-      id: item.Id,
-      name: item.Name,
-      type: item.Type,
-      year: item.ProductionYear,
-      overview: item.Overview,
-      createdAt: item.DateCreated,
-      imageTag: item.ImageTags?.Primary || null,
-    }));
+    return (data.Items || []).map((item) => this.mapItem(item));
+  }
+
+  async getMovies() {
+    const all = [];
+    const pageSize = 100;
+    let index = 0;
+    let total = Infinity;
+    while (index < total) {
+      const data = await this.request('/Items', {
+        query: {
+          Recursive: true,
+          SortBy: 'SortName',
+          SortOrder: 'Ascending',
+          Limit: pageSize,
+          StartIndex: index,
+          ImageTypeLimit: 1,
+          EnableImageTypes: 'Primary',
+          IncludeItemTypes: 'Movie',
+          Fields: 'PrimaryImageAspectRatio,Overview,ProductionYear,Genres,SortName',
+        },
+      });
+      const items = data.Items || [];
+      for (const item of items) all.push(this.mapItem(item));
+      total = data.TotalRecordCount ?? all.length;
+      if (items.length === 0) break;
+      index += items.length;
+      if (index >= 20_000) break;
+    }
+    return all;
   }
 
   async getSessions() {

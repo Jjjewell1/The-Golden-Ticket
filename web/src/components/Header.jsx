@@ -3,6 +3,7 @@ import { TicketLogo } from './Ticket.jsx';
 
 const links = [
   { to: '/', label: 'Home', end: true },
+  { to: '/movies', label: 'Movies' },
   { to: '/games', label: 'Games' },
   { to: '/requests', label: 'Requests' },
   { to: '/guide', label: 'Guide' },

@@ -12,6 +12,18 @@ export async function getRecentlyAdded() {
   return getJson('/api/recently-added');
 }
 
+export async function getGames() {
+  return getJson('/api/games');
+}
+
+export async function getMovies() {
+  return getJson('/api/movies');
+}
+
+export async function getRandom() {
+  return getJson('/api/random');
+}
+
 export async function getSessions() {
   return getJson('/api/sessions');
 }

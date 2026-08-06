@@ -67,19 +67,12 @@ export class Romm {
     this.sessionExpiresAt = Date.now() + 60 * 60 * 1000;
   }
 
-  async getRecentGames(limit = 12) {
-    await this.ensureSession();
-    const res = await this.request(
-      `/api/roms?limit=${limit}&order_by=updated_at&order_dir=desc&with_files=false`,
-    );
-    if (res.status === 401) {
-      this.sessionExpiresAt = 0;
-      await this.ensureSession();
-      return this.getRecentGames(limit);
-    }
-    if (!res.ok) throw new Error(`RomM: getRecentGames failed ${res.status}`);
-    const data = await res.json();
-    return (data.items || []).map((g) => ({
+  mapRom(g) {
+    const genres = (g.metadatum?.genres || [])
+      .map((x) => (typeof x === 'string' ? x : x?.name))
+      .filter(Boolean)
+      .slice(0, 4);
+    return {
       id: g.id,
       name: g.name || g.fs_name_no_tags,
       platform: g.platform_display_name,
@@ -90,8 +83,60 @@ export class Romm {
       summary: g.summary || null,
       identified: !!g.is_identified,
       updatedAt: g.updated_at,
-      genres: (g.metadatum?.genres || []).map((x) => x.name).slice(0, 3),
-    }));
+      genres,
+    };
+  }
+
+  async _fetchRoms(query = {}) {
+    await this.ensureSession();
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) {
+      if (v !== undefined && v !== null && v !== '') params.set(k, v);
+    }
+    const res = await this.request(`/api/roms?${params.toString()}`);
+    if (res.status === 401) {
+      this.sessionExpiresAt = 0;
+      await this.ensureSession();
+      return this._fetchRoms(query);
+    }
+    if (!res.ok) throw new Error(`RomM: getRoms failed ${res.status}`);
+    const data = await res.json();
+    return {
+      items: (data.items || []).map((g) => this.mapRom(g)),
+      total: data.total || 0,
+    };
+  }
+
+  async getRecentGames(limit = 12) {
+    const { items } = await this._fetchRoms({
+      limit,
+      order_by: 'updated_at',
+      order_dir: 'desc',
+      with_files: 'false',
+    });
+    return items;
+  }
+
+  async getFullGames() {
+    const all = [];
+    const pageSize = 200;
+    let offset = 0;
+    let total = Infinity;
+    while (offset < total) {
+      const { items, total: t } = await this._fetchRoms({
+        limit: pageSize,
+        offset,
+        order_by: 'name_sort_key',
+        order_dir: 'asc',
+        with_files: 'false',
+      });
+      all.push(...items);
+      total = t || all.length;
+      if (items.length === 0) break;
+      offset += items.length;
+      if (offset >= 10_000) break;
+    }
+    return all;
   }
 
   async findUser(username) {

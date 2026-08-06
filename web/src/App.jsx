@@ -1,7 +1,9 @@
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
+import Theater from './components/Theater.jsx';
 import Home from './pages/Home.jsx';
+import Movies from './pages/Movies.jsx';
 import Games from './pages/Games.jsx';
 import Requests from './pages/Requests.jsx';
 import Signup from './pages/Signup.jsx';
@@ -12,10 +14,12 @@ import NotFound from './pages/NotFound.jsx';
 export default function App() {
   return (
     <div className="app">
+      <Theater />
       <Header />
       <main className="main">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/movies" element={<Movies />} />
           <Route path="/games" element={<Games />} />
           <Route path="/requests" element={<Requests />} />
           <Route path="/get-my-ticket" element={<Signup />} />

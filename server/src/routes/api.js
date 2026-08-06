@@ -46,6 +46,43 @@ export function apiRouter({ jellyfin, romm, seerr }) {
     }
   });
 
+  router.get('/games', async (req, res) => {
+    try {
+      const games = await cache.wrap('games', () => romm.getFullGames(), 5 * 60_000);
+      res.json({ items: games, total: games.length });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  router.get('/movies', async (req, res) => {
+    try {
+      const movies = await cache.wrap('movies', () => jellyfin.getMovies(), 5 * 60_000);
+      res.json({ items: movies, total: movies.length });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  router.get('/random', async (req, res) => {
+    try {
+      const pick = (arr) => (arr.length ? arr[Math.floor(Math.random() * arr.length)] : null);
+      const type = String(req.query.type || 'both');
+      const result = {};
+      if (type === 'movie' || type === 'both') {
+        const movies = await cache.wrap('movies', () => jellyfin.getMovies(), 5 * 60_000);
+        result.movie = pick(movies);
+      }
+      if (type === 'game' || type === 'both') {
+        const games = await cache.wrap('games', () => romm.getFullGames(), 5 * 60_000);
+        result.game = pick(games);
+      }
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   router.get('/requests', async (req, res) => {
     try {
       const count = await cache.wrap('requests', () => seerr.getRequestCount(), 60_000);

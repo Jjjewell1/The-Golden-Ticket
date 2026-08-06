@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   getConfig,
@@ -12,6 +12,7 @@ import {
 import AppCard from '../components/AppCard.jsx';
 import PosterRail from '../components/PosterRail.jsx';
 import Spotlight from '../components/Spotlight.jsx';
+import RandomPicks from '../components/RandomPicks.jsx';
 import { Reveal, useCountUp, useTilt } from '../lib/useFx.jsx';
 
 const jellyfinUrl = 'https://movies.jewellcore.com';
@@ -54,71 +55,6 @@ function useHomeData() {
   }, []);
 
   return state;
-}
-
-function Sparkles() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const ctx = canvas.getContext('2d');
-    let raf;
-    let w = 0;
-    let h = 0;
-    const resize = () => {
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      w = canvas.offsetWidth;
-      h = canvas.offsetHeight;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-    resize();
-    window.addEventListener('resize', resize);
-    const parts = Array.from({ length: 54 }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      r: 0.6 + Math.random() * 1.5,
-      vx: (Math.random() - 0.5) * 0.0005,
-      vy: 0.0003 + Math.random() * 0.0011,
-      a: 0.12 + Math.random() * 0.45,
-      tw: 0.002 + Math.random() * 0.008,
-      phase: Math.random() * Math.PI * 2,
-    }));
-    let t = 0;
-    const draw = () => {
-      t += 1;
-      ctx.clearRect(0, 0, w, h);
-      for (const p of parts) {
-        p.x += p.vx * t * 0.05;
-        p.y -= p.vy * 16;
-        if (p.y < -0.03) {
-          p.y = 1.03;
-          p.x = Math.random();
-        }
-        if (p.x < -0.03) p.x = 1.03;
-        if (p.x > 1.03) p.x = -0.03;
-        const alpha = p.a * (0.5 + 0.5 * Math.sin(t * p.tw * 60 + p.phase));
-        const x = p.x * w;
-        const y = p.y * h;
-        const g = ctx.createRadialGradient(x, y, 0, x, y, p.r * 6);
-        g.addColorStop(0, `rgba(247,223,138,${alpha.toFixed(3)})`);
-        g.addColorStop(1, 'rgba(247,223,138,0)');
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(x, y, p.r * 6, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      raf = requestAnimationFrame(draw);
-    };
-    raf = requestAnimationFrame(draw);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-  return <canvas ref={ref} className="hero-sparkles" aria-hidden="true" />;
 }
 
 const tickerWords = ['Movies', 'Games', 'Requests', 'Photos', 'Files', 'Favorites'];
@@ -254,11 +190,6 @@ export default function Home() {
   return (
     <div className="home">
       <section className="hero">
-        <Sparkles />
-        <span className="hero-aurora hero-aurora-a" aria-hidden="true" />
-        <span className="hero-aurora hero-aurora-b" aria-hidden="true" />
-        <span className="hero-aurora hero-aurora-c" aria-hidden="true" />
-
         <div className="hero-inner">
           <span className="hero-badge hero-anim" style={{ '--d': '0ms' }}>
             <span className="live-dot" /> Your all-access pass has arrived
@@ -352,6 +283,8 @@ export default function Home() {
         </Reveal>
       )}
 
+      <RandomPicks />
+
       {featured && (
         <Reveal as="section" className="section" delay={60}>
           <div className="section-head">
@@ -359,9 +292,9 @@ export default function Home() {
               <h2 className="section-title">Fresh on Jellyfin</h2>
               <p className="section-sub">The latest arrivals to the library.</p>
             </div>
-            <a href={jellyfinUrl} target="_blank" rel="noreferrer" className="btn btn-small btn-ghost">
-              Open Jellyfin →
-            </a>
+            <Link to="/movies" className="btn btn-small btn-ghost">
+              All movies →
+            </Link>
           </div>
           <Spotlight
             item={{ image: featured.imageTag ? posterUrl(featured.id, featured.imageTag, 600) : null, title: featured.name, year: featured.year, overview: featured.overview }}
