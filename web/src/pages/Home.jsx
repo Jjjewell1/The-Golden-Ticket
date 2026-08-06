@@ -1,26 +1,43 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getConfig, getRecentlyAdded, getSessions, getRequestCount, posterUrl, gameCoverUrl } from '../lib/api.js';
-import Section from '../components/Section.jsx';
+import {
+  getConfig,
+  getRecentlyAdded,
+  getSessions,
+  getRequestCount,
+  getStatus,
+  posterUrl,
+  gameCoverUrl,
+} from '../lib/api.js';
 import AppCard from '../components/AppCard.jsx';
-import PosterCard from '../components/PosterCard.jsx';
-import { TicketShape } from '../components/Ticket.jsx';
+import PosterRail from '../components/PosterRail.jsx';
+import Spotlight from '../components/Spotlight.jsx';
+import { Reveal, useCountUp, useTilt } from '../lib/useFx.jsx';
 
 const jellyfinUrl = 'https://movies.jewellcore.com';
+const rommUrl = 'https://games.jewellcore.com';
 
 function useHomeData() {
-  const [state, setState] = useState({ loading: true, config: null, data: null, sessions: [], requests: null, error: null });
+  const [state, setState] = useState({
+    loading: true,
+    config: null,
+    data: null,
+    sessions: [],
+    requests: null,
+    status: null,
+    error: null,
+  });
 
   useEffect(() => {
     let alive = true;
-    Promise.all([getConfig(), getRecentlyAdded(), getSessions(), getRequestCount()])
-      .then(([config, data, sessions, requests]) => {
+    Promise.all([getConfig(), getRecentlyAdded(), getSessions(), getRequestCount(), getStatus()])
+      .then(([config, data, sessions, requests, status]) => {
         if (!alive) return;
-        setState({ loading: false, config, data, sessions, requests: requests.count, error: null });
+        setState({ loading: false, config, data, sessions, requests: requests.count, status, error: null });
       })
       .catch((err) => {
         if (!alive) return;
-        setState({ loading: false, config: null, data: null, sessions: [], requests: null, error: err.message });
+        setState({ loading: false, config: null, data: null, sessions: [], requests: null, status: null, error: err.message });
       });
     const t = setInterval(async () => {
       try {
@@ -39,37 +56,149 @@ function useHomeData() {
   return state;
 }
 
-function WhoWatching({ sessions }) {
+function Sparkles() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const ctx = canvas.getContext('2d');
+    let raf;
+    let w = 0;
+    let h = 0;
+    const resize = () => {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      w = canvas.offsetWidth;
+      h = canvas.offsetHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    const parts = Array.from({ length: 54 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      r: 0.6 + Math.random() * 1.5,
+      vx: (Math.random() - 0.5) * 0.0005,
+      vy: 0.0003 + Math.random() * 0.0011,
+      a: 0.12 + Math.random() * 0.45,
+      tw: 0.002 + Math.random() * 0.008,
+      phase: Math.random() * Math.PI * 2,
+    }));
+    let t = 0;
+    const draw = () => {
+      t += 1;
+      ctx.clearRect(0, 0, w, h);
+      for (const p of parts) {
+        p.x += p.vx * t * 0.05;
+        p.y -= p.vy * 16;
+        if (p.y < -0.03) {
+          p.y = 1.03;
+          p.x = Math.random();
+        }
+        if (p.x < -0.03) p.x = 1.03;
+        if (p.x > 1.03) p.x = -0.03;
+        const alpha = p.a * (0.5 + 0.5 * Math.sin(t * p.tw * 60 + p.phase));
+        const x = p.x * w;
+        const y = p.y * h;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, p.r * 6);
+        g.addColorStop(0, `rgba(247,223,138,${alpha.toFixed(3)})`);
+        g.addColorStop(1, 'rgba(247,223,138,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, p.r * 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+  return <canvas ref={ref} className="hero-sparkles" aria-hidden="true" />;
+}
+
+const tickerWords = ['Movies', 'Games', 'Requests', 'Photos', 'Files', 'Favorites'];
+
+function Ticker() {
+  return (
+    <div className="ticker" aria-hidden="true">
+      <div className="ticker-track">
+        {[0, 1].map((half) => (
+          <span className="ticker-half" key={half}>
+            {tickerWords.map((word, i) => (
+              <span className="ticker-item" key={i}>
+                <span className="ticker-star">✦</span> {word}
+              </span>
+            ))}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Stat({ value, label }) {
+  const n = useCountUp(value);
+  return (
+    <div className="stat">
+      <span className="stat-num">{n}</span>
+      <span className="stat-label">{label}</span>
+    </div>
+  );
+}
+
+function LiveNow({ sessions }) {
   if (sessions.length === 0) {
     return (
-      <div className="watching watching-empty">
-        <span className="watching-pop" aria-hidden="true">🍿</span>
+      <div className="livenow livenow-empty">
+        <span className="livenow-emoji" aria-hidden="true">
+          🍿
+        </span>
         <p>
-          <strong>Nobody's watching right now.</strong> The popcorn is ready when you are!
+          <strong>The popcorn is ready when you are.</strong>
         </p>
       </div>
     );
   }
   return (
-    <div className="watching">
-      {sessions.map((s, i) => (
-        <div key={i} className="watching-pill">
-          <span className="watching-dot" title={s.paused ? 'paused' : 'watching now'} />
-          <span>
-            <strong>{s.user}</strong> is {s.paused ? 'paused' : 'watching'}{' '}
-            <em>
-              {s.series || s.item}
-              {s.episode ? ` S${s.season}E${s.episode}` : ''}
-            </em>
+    <div className="livenow">
+      <span className="livenow-label">
+        <span className="live-dot" /> Live
+      </span>
+      <div className="livenow-track">
+        {sessions.map((s, i) => (
+          <span className="livenow-item" key={i}>
+            {s.imageId ? (
+              <img
+                className="livenow-thumb"
+                src={posterUrl(s.imageId, s.imageTag)}
+                alt=""
+                loading="lazy"
+              />
+            ) : (
+              <span className="livenow-dot" data-paused={s.paused} />
+            )}
+            <span className="livenow-text">
+              <strong>{s.user}</strong> {s.paused ? 'paused' : 'is watching'}{' '}
+              <em>
+                {s.series || s.item}
+                {s.episode ? ` · S${s.season}E${s.episode}` : ''}
+              </em>
+            </span>
           </span>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
 
 export default function Home() {
-  const { loading, config, data, sessions, requests, error } = useHomeData();
+  const { loading, config, data, sessions, requests, status, error } = useHomeData();
+  const ticketTilt = useTilt(7);
 
   if (loading) {
     return (
@@ -80,33 +209,103 @@ export default function Home() {
     );
   }
 
-  const groups = config?.apps ? Array.from(new Set(config.apps.map((a) => a.group))) : [];
+  const movies = data?.movies || [];
+  const series = data?.series || [];
   const games = data?.games || [];
+  const featured = movies[0] || null;
+
+  const statusFor = (name) => {
+    const map = { Jellyfin: 'jellyfin', RomM: 'romm', 'Media Requests': 'seerr' };
+    const key = map[name];
+    if (!key || !status) return null;
+    return status.services?.[key] ?? null;
+  };
+
+  const movieRail = movies.slice(1).map((m) => ({
+    id: m.id,
+    image: m.imageTag ? posterUrl(m.id, m.imageTag) : null,
+    title: m.name,
+    subtitle: m.year ? `Movie · ${m.year}` : 'Movie',
+    badge: 'New',
+    overlay: m.overview,
+    href: jellyfinUrl,
+  }));
+
+  const seriesRail = series.map((s) => ({
+    id: s.id,
+    image: s.imageTag ? posterUrl(s.id, s.imageTag) : null,
+    title: s.name,
+    subtitle: 'Series',
+    badge: 'New',
+    overlay: s.overview,
+    href: jellyfinUrl,
+  }));
+
+  const gameRail = games.slice(0, 10).map((g) => ({
+    id: g.id,
+    image: gameCoverUrl(g.coverPath) || g.coverUrl || null,
+    title: g.name,
+    subtitle: g.platform,
+    badge: 'Play',
+    emoji: '🎮',
+    href: rommUrl,
+  }));
 
   return (
     <div className="home">
       <section className="hero">
-        <div className="hero-glow" aria-hidden="true" />
+        <Sparkles />
+        <span className="hero-aurora hero-aurora-a" aria-hidden="true" />
+        <span className="hero-aurora hero-aurora-b" aria-hidden="true" />
+        <span className="hero-aurora hero-aurora-c" aria-hidden="true" />
+
         <div className="hero-inner">
-          <span className="hero-badge">🎟️ You're invited</span>
-          <h1 className="hero-title">
-            <span>The</span> Golden <span className="hero-title-gold">Ticket</span>
+          <span className="hero-badge hero-anim" style={{ '--d': '0ms' }}>
+            <span className="live-dot" /> Your all-access pass has arrived
+          </span>
+
+          <h1 className="hero-title hero-anim" style={{ '--d': '120ms' }}>
+            <span className="hero-title-line">
+              <span className="hero-title-the">The</span>
+            </span>
+            <span className="hero-title-line shimmer">Golden Ticket</span>
           </h1>
-          <p className="hero-tagline">
+
+          <p className="hero-tagline hero-anim" style={{ '--d': '240ms' }}>
             Movies, games, and a little bit of magic — all in one place, just for you.
           </p>
-          <div className="hero-cta">
-            <Link to="/get-my-ticket" className="btn btn-gold">
-              Get my ticket
+
+          <div className="hero-cta hero-anim" style={{ '--d': '360ms' }}>
+            <Link to="/get-my-ticket" className="btn btn-gold btn-lg">
+              <span className="btn-label">Get my ticket</span>
+              <span className="btn-shine" aria-hidden="true" />
             </Link>
-            <a href={jellyfinUrl} target="_blank" rel="noreferrer" className="btn btn-ghost">
+            <a href={jellyfinUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-lg">
               Start watching
             </a>
           </div>
-          <TicketShape className="hero-ticket">
-            <p>Your all-access pass to the Jewellcore server.</p>
-          </TicketShape>
+
+          <div className="hero-stats hero-anim" style={{ '--d': '480ms' }}>
+            <Stat value={movies.length} label="Movies in" />
+            <Stat value={series.length} label="Shows in" />
+            <Stat value={games.length} label="Games in" />
+            <Stat value={requests ?? 0} label="In the queue" />
+          </div>
+
+          <div className="hero-ticket hero-anim" style={{ '--d': '600ms' }}>
+            <div className="hero-ticket-tilt" {...ticketTilt}>
+              <div className="ticket-shape">
+                <div className="ticket-notch ticket-notch-l" />
+                <div className="ticket-body">
+                  <p>Your all-access pass to the Jewellcore server.</p>
+                </div>
+                <div className="ticket-notch ticket-notch-r" />
+              </div>
+            </div>
+          </div>
         </div>
+
+        <Ticker />
       </section>
 
       {error && (
@@ -119,7 +318,9 @@ export default function Home() {
         <div className="announcements">
           {config.announcements.map((a, i) => (
             <div key={i} className="announcement">
-              <span className="announcement-mark" aria-hidden="true">📣</span>
+              <span className="announcement-mark" aria-hidden="true">
+                📣
+              </span>
               <div>
                 <h3>{a.title}</h3>
                 <p>{a.body}</p>
@@ -129,110 +330,103 @@ export default function Home() {
         </div>
       )}
 
-      {!error && <WhoWatching sessions={sessions} />}
+      {!error && (
+        <Reveal>
+          <LiveNow sessions={sessions} />
+        </Reveal>
+      )}
 
-      <Section title="Jump in" subtitle="Everything running on the server, one click away.">
-        <div className="app-groups">
-          {groups.map((group) => (
-            <div key={group} className="app-group">
-              <h3 className="app-group-title">{group}</h3>
-              <div className="app-grid">
-                {config.apps
-                  .filter((a) => a.group === group)
-                  .map((app) => (
-                    <AppCard key={app.name} app={app} />
-                  ))}
-              </div>
+      {config?.apps?.length > 0 && (
+        <Reveal as="section" className="section" delay={80}>
+          <div className="section-head">
+            <div>
+              <h2 className="section-title">Everything, one click away</h2>
+              <p className="section-sub">Your own corner of the internet — all of it, right here.</p>
             </div>
-          ))}
-        </div>
-      </Section>
+          </div>
+          <div className="app-grid">
+            {config.apps.map((app, i) => (
+              <AppCard key={app.name} app={app} online={statusFor(app.name)} />
+            ))}
+          </div>
+        </Reveal>
+      )}
 
-      {data && (data.movies?.length > 0 || data.series?.length > 0) && (
-        <Section
-          title="Fresh on Jellyfin"
-          subtitle="The latest arrivals to the library."
-          action={
+      {featured && (
+        <Reveal as="section" className="section" delay={60}>
+          <div className="section-head">
+            <div>
+              <h2 className="section-title">Fresh on Jellyfin</h2>
+              <p className="section-sub">The latest arrivals to the library.</p>
+            </div>
             <a href={jellyfinUrl} target="_blank" rel="noreferrer" className="btn btn-small btn-ghost">
               Open Jellyfin →
             </a>
-          }
-        >
-          {data.movies?.length > 0 && (
-            <div className="poster-rail">
-              {data.movies.map((m) => (
-                <PosterCard
-                  key={m.id}
-                  image={m.imageTag ? posterUrl(m.id, m.imageTag) : null}
-                  title={m.name}
-                  subtitle={m.year ? `Movie · ${m.year}` : 'Movie'}
-                  badge="New"
-                  href={jellyfinUrl}
-                />
-              ))}
-            </div>
-          )}
-          {data.series?.length > 0 && (
-            <div className="poster-rail">
-              {data.series.map((s) => (
-                <PosterCard
-                  key={s.id}
-                  image={s.imageTag ? posterUrl(s.id, s.imageTag) : null}
-                  title={s.name}
-                  subtitle="Series"
-                  badge="New"
-                  href={jellyfinUrl}
-                />
-              ))}
-            </div>
-          )}
-        </Section>
+          </div>
+          <Spotlight
+            item={{ image: featured.imageTag ? posterUrl(featured.id, featured.imageTag, 600) : null, title: featured.name, year: featured.year, overview: featured.overview }}
+            href={jellyfinUrl}
+          />
+        </Reveal>
       )}
 
-      {games.length > 0 && (
-        <Section
-          title="Fresh on RomM"
-          subtitle="New games in the arcade."
-          action={
+      {movieRail.length > 0 && (
+        <Reveal delay={80}>
+          <PosterRail items={movieRail} size="tall" auto={4200} className="rail-inset" />
+        </Reveal>
+      )}
+
+      {seriesRail.length > 0 && (
+        <Reveal as="section" className="section" delay={80}>
+          <div className="section-head">
+            <div>
+              <h3 className="section-kicker">New series</h3>
+              <h2 className="section-title">Fresh shows</h2>
+            </div>
+          </div>
+          <PosterRail items={seriesRail} size="tall" />
+        </Reveal>
+      )}
+
+      {gameRail.length > 0 && (
+        <Reveal as="section" className="section" delay={80}>
+          <div className="section-head">
+            <div>
+              <h2 className="section-title">Fresh on RomM</h2>
+              <p className="section-sub">New games in the arcade.</p>
+            </div>
             <Link to="/games" className="btn btn-small btn-ghost">
               All games →
             </Link>
-          }
-        >
-          <div className="poster-rail">
-            {games.slice(0, 10).map((g) => (
-              <PosterCard
-                key={g.id}
-                image={gameCoverUrl(g.coverPath) || g.coverUrl || null}
-                title={g.name}
-                subtitle={g.platform}
-                badge="Play"
-                href="https://games.jewellcore.com"
-              />
-            ))}
           </div>
-        </Section>
+          <PosterRail items={gameRail} size="wide" />
+        </Reveal>
       )}
 
-      <Section title="Want something new?" subtitle="Ask and you shall receive.">
-        <div className="request-teaser">
-          <div className="request-teaser-text">
-            <h3>Found a movie or show you're dying to watch?</h3>
+      <Reveal as="section" className="section">
+        <div className="request-banner">
+          <span className="request-banner-orb" aria-hidden="true" />
+          <div className="request-banner-icon" aria-hidden="true">
+            🎟️
+          </div>
+          <div className="request-banner-text">
+            <h2>Found something you're dying to watch?</h2>
             <p>
               Send it through and it usually lands in the library within a day or two.
               {requests !== null && (
                 <span className="request-count">
                   {' '}
-                  {requests} {requests === 1 ? 'request' : 'requests'} in the queue right now.
+                  <strong className="request-count-big">{requests}</strong>{' '}
+                  {requests === 1 ? 'request' : 'requests'} in the queue right now.
                 </span>
               )}
             </p>
           </div>
-          <Link to="/requests" className="btn btn-gold">
+          <Link to="/requests" className="btn btn-gold btn-lg">
             Request something
           </Link>
         </div>
-      </Section>
+      </Reveal>
     </div>
   );
 }

@@ -20,6 +20,10 @@ export async function getRequestCount() {
   return getJson('/api/requests');
 }
 
+export async function getStatus() {
+  return getJson('/api/status');
+}
+
 export async function postSignup(payload) {
   const res = await fetch('/api/signup', {
     method: 'POST',
