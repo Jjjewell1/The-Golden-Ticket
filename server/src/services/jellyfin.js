@@ -1,7 +1,9 @@
 export class Jellyfin {
-  constructor({ url, apiKey }) {
+  constructor({ url, apiKey, userName = '' }) {
     this.url = url;
     this.apiKey = apiKey;
+    this.userName = userName;
+    this.detailUserId = null;
   }
 
   async request(path, { method = 'GET', body, query = {} } = {}) {
@@ -40,6 +42,71 @@ export class Jellyfin {
       createdAt: item.DateCreated,
       imageTag: item.ImageTags?.Primary || null,
     };
+  }
+
+  async getDetailUserId() {
+    if (this.detailUserId) return this.detailUserId;
+    const users = (await this.request('/Users')) || [];
+    let match = null;
+    if (this.userName) {
+      match = users.find((u) => u.Name && u.Name.toLowerCase() === this.userName.toLowerCase());
+    }
+    if (!match) match = users[0];
+    this.detailUserId = match ? match.Id : null;
+    return this.detailUserId;
+  }
+
+  mapDetail(item) {
+    const ms = (item.MediaStreams || []).find((s) => s.Type === 'Video');
+    const as = (item.MediaStreams || []).find((s) => s.Type === 'Audio');
+    const source = item.MediaSources && item.MediaSources[0];
+    const cast = (item.People || [])
+      .filter((p) => p.Type === 'Actor' && p.Name)
+      .map((p) => ({ name: p.Name, role: p.Role || null }))
+      .slice(0, 10);
+    const directors = (item.People || [])
+      .filter((p) => p.Type === 'Director' && p.Name)
+      .map((p) => p.Name);
+    return {
+      id: item.Id,
+      name: item.Name,
+      year: item.ProductionYear,
+      overview: item.Overview,
+      genres: item.Genres || [],
+      imageTag: item.ImageTags?.Primary || null,
+      runtimeMinutes: item.RunTimeTicks ? Math.round(item.RunTimeTicks / 600_000_000) : null,
+      communityRating: item.CommunityRating ?? null,
+      criticRating: item.CriticRating ?? null,
+      officialRating: item.OfficialRating || null,
+      tagline: (item.Taglines && item.Taglines[0]) || null,
+      premiereDate: item.PremiereDate || null,
+      productionLocations: item.ProductionLocations || [],
+      studios: (item.Studios || []).map((s) => s.Name),
+      directors,
+      cast,
+      providerIds: item.ProviderIds || {},
+      trailers: (item.RemoteTrailers || []).map((t) => t.Url).filter(Boolean),
+      file: source
+        ? {
+            container: source.Container || null,
+            size: source.Size ?? null,
+            path: source.Path || null,
+          }
+        : null,
+      video: ms ? { codec: ms.Codec, width: ms.Width, height: ms.Height, hdr: ms.VideoRange, bitDepth: ms.BitDepth } : null,
+      audio: as ? { codec: as.Codec, channels: as.Channels } : null,
+    };
+  }
+
+  async getMovieDetail(id) {
+    const userId = await this.getDetailUserId();
+    if (!userId) throw new Error('Jellyfin: no user available for detail lookup');
+    const data = await this.request(`/Users/${encodeURIComponent(userId)}/Items/${encodeURIComponent(id)}`, {
+      query: {
+        Fields: 'People,Studios,MediaSources,MediaStreams,ProviderIds,RemoteTrailers,Taglines,OfficialRating,CriticRating,CommunityRating,RunTimeTicks,ProductionLocations,OriginalTitle,PremiereDate,Genres,Overview,ProductionYear',
+      },
+    });
+    return this.mapDetail(data);
   }
 
   async getRecentlyAdded(limit = 12, types = ['Movie', 'Series']) {

@@ -132,6 +132,7 @@ export const config = {
   jellyfin: {
     url: (env.JELLYFIN_URL || 'http://192.168.1.154:8096').replace(/\/+$/, ''),
     apiKey: env.JELLYFIN_API_KEY || '',
+    user: env.JELLYFIN_USER || '',
   },
   romm: {
     url: (env.ROMM_URL || 'http://192.168.1.154:8090').replace(/\/+$/, ''),

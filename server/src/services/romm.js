@@ -87,6 +87,54 @@ export class Romm {
     };
   }
 
+  mapRomDetail(g) {
+    const m = g.metadatum || {};
+    const ageRatings = (m.age_ratings || [])
+      .map((r) => {
+        if (typeof r === 'string') return r;
+        const system = r.category === 1 ? 'ESRB' : r.category === 2 ? 'PEGI' : null;
+        const value = r.rating || r.name;
+        if (!value) return null;
+        return system ? `${system} ${value}` : String(value);
+      })
+      .filter(Boolean);
+    const files = (g.files || []).map((f) => f.file_name).filter(Boolean);
+    return {
+      ...this.mapRom(g),
+      year: m.first_release_date ? new Date(m.first_release_date).getFullYear() : null,
+      rating: m.average_rating ?? null,
+      companies: (m.companies || []).filter(Boolean),
+      collections: (m.collections || []).filter(Boolean),
+      franchises: (m.franchises || []).filter(Boolean),
+      ageRatings,
+      gameModes: (m.game_modes || []).filter(Boolean),
+      playerCount: m.player_count || null,
+      regions: g.regions || [],
+      languages: g.languages || [],
+      tags: g.tags || [],
+      fileSize: g.fs_size_bytes ?? null,
+      hasManual: !!g.has_manual,
+      hasSoundtrack: !!g.has_soundtrack,
+      hasNotes: !!g.has_notes,
+      youtubeVideoId: g.youtube_video_id || null,
+      files,
+    };
+  }
+
+  async getRomDetail(id) {
+    await this.ensureSession();
+    const res = await this.request(`/api/roms/${encodeURIComponent(id)}`);
+    if (res.status === 401) {
+      this.sessionExpiresAt = 0;
+      await this.ensureSession();
+      return this.getRomDetail(id);
+    }
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`RomM: get rom detail failed ${res.status}`);
+    const g = await res.json();
+    return this.mapRomDetail(g);
+  }
+
   async _fetchRoms(query = {}) {
     await this.ensureSession();
     const params = new URLSearchParams();

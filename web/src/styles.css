@@ -1867,6 +1867,136 @@ button.poster-card:focus-visible {
   padding-top: 14px;
 }
 
+.modal-actions .btn-gold {
+  margin-left: auto;
+}
+
+.modal-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 2px 0;
+}
+
+.modal-stat {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.modal-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal-block-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.modal-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.modal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.modal-chip em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.modal-note {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.modal-note em {
+  font-style: italic;
+  color: var(--text);
+  opacity: 0.85;
+}
+
+.modal-fileinfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding-top: 2px;
+}
+
+.modal-fileinfo-item {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  opacity: 0.9;
+}
+
+.modal-error {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--danger, #ef4444);
+}
+
+.modal-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(
+    100deg,
+    var(--card) 40%,
+    var(--card-strong) 50%,
+    var(--card) 60%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.skeleton-line.w-60 {
+  width: 60%;
+}
+
+.skeleton-line.w-80 {
+  width: 80%;
+}
+
+.skeleton-line.w-100 {
+  width: 100%;
+}
+
 /* ---------- rails ---------- */
 
 .rail {

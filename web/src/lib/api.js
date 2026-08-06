@@ -20,6 +20,14 @@ export async function getMovies() {
   return getJson('/api/movies');
 }
 
+export async function getMovieDetail(id) {
+  return getJson(`/api/movies/${encodeURIComponent(id)}`);
+}
+
+export async function getGameDetail(id) {
+  return getJson(`/api/games/${encodeURIComponent(id)}`);
+}
+
 export async function getRandom() {
   return getJson('/api/random');
 }

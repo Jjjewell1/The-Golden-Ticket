@@ -64,6 +64,30 @@ export function apiRouter({ jellyfin, romm, seerr }) {
     }
   });
 
+  router.get('/movies/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!id) return res.status(400).json({ error: 'missing id' });
+      const detail = await cache.wrap(`movie-detail:${id}`, () => jellyfin.getMovieDetail(id), 5 * 60_000);
+      if (!detail) return res.status(404).json({ error: 'not found' });
+      res.json(detail);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  router.get('/games/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!id) return res.status(400).json({ error: 'missing id' });
+      const detail = await cache.wrap(`game-detail:${id}`, () => romm.getRomDetail(id), 5 * 60_000);
+      if (!detail) return res.status(404).json({ error: 'not found' });
+      res.json(detail);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   router.get('/random', async (req, res) => {
     try {
       const pick = (arr) => (arr.length ? arr[Math.floor(Math.random() * arr.length)] : null);
