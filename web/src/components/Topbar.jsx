@@ -1,6 +1,9 @@
 import ThemeToggle from './ThemeToggle.jsx';
+import { useAuth } from '../lib/auth.jsx';
 
 export default function Topbar({ theme, onToggleTheme, onMenu }) {
+  const { user, logout } = useAuth();
+
   return (
     <header className="topbar">
       <button type="button" className="topbar-burger" onClick={onMenu} aria-label="Open menu">
@@ -9,7 +12,17 @@ export default function Topbar({ theme, onToggleTheme, onMenu }) {
         <span />
       </button>
       <span className="topbar-brand">The Golden Ticket</span>
-      <ThemeToggle theme={theme} onToggle={onToggleTheme} className="theme-toggle-topbar" />
+      <div className="topbar-right">
+        <ThemeToggle theme={theme} onToggle={onToggleTheme} className="theme-toggle-topbar" />
+        {user && (
+          <div className="topbar-user">
+            <span className="topbar-user-name">{user.username}</span>
+            <button type="button" className="btn btn-ghost btn-small" onClick={logout}>
+              Sign out
+            </button>
+          </div>
+        )}
+      </div>
     </header>
   );
 }

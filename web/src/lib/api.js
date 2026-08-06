@@ -4,7 +4,17 @@ export async function getJson(path) {
   return res.json();
 }
 
-export async function getConfig() {
+async function postJson(path, payload) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload ?? {}),
+  });
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data };
+}
+
+export function getConfig() {
   return getJson('/api/config');
 }
 
@@ -45,13 +55,47 @@ export async function getStatus() {
 }
 
 export async function postSignup(payload) {
-  const res = await fetch('/api/signup', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json().catch(() => ({}));
-  return { ok: res.ok, status: res.status, data };
+  return postJson('/api/signup', payload);
+}
+
+export async function postLogin(payload) {
+  return postJson('/api/auth/login', payload);
+}
+
+export async function postLogout() {
+  return postJson('/api/auth/logout');
+}
+
+export function getMe() {
+  return getJson('/api/auth/me');
+}
+
+export async function postForgot(payload) {
+  return postJson('/api/auth/forgot', payload);
+}
+
+export async function postReset(token, payload) {
+  return postJson(`/api/auth/reset/${encodeURIComponent(token)}`, payload);
+}
+
+export function getOwnerRequests() {
+  return getJson('/api/owner/requests');
+}
+
+export function getOwnerUsers() {
+  return getJson('/api/owner/users');
+}
+
+export async function postOwnerAddUser(payload) {
+  return postJson('/api/owner/users', payload);
+}
+
+export async function postOwnerDecision(requestId, payload) {
+  return postJson(`/api/owner/decision/${encodeURIComponent(requestId)}`, payload);
+}
+
+export async function postOwnerUserAction(userId, action) {
+  return postJson(`/api/owner/users/${encodeURIComponent(userId)}/${action}`);
 }
 
 export async function verifyOwnerPin(pin) {

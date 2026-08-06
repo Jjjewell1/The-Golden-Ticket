@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useTheme } from './lib/theme.jsx';
+import { AuthProvider, useAuth } from './lib/auth.jsx';
 import Background from './components/Background.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Topbar from './components/Topbar.jsx';
@@ -10,13 +11,51 @@ import Movies from './pages/Movies.jsx';
 import Games from './pages/Games.jsx';
 import Requests from './pages/Requests.jsx';
 import Signup from './pages/Signup.jsx';
+import Login from './pages/Login.jsx';
+import Forgot from './pages/Forgot.jsx';
 import Guide from './pages/Guide.jsx';
 import Owner from './pages/Owner.jsx';
 import NotFound from './pages/NotFound.jsx';
 
 export default function App() {
+  return (
+    <AuthProvider>
+      <Shell />
+    </AuthProvider>
+  );
+}
+
+function Shell() {
+  const { user, loading } = useAuth();
   const { theme, toggle } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="app app-auth">
+        <Background />
+        <div className="auth-splash">
+          <div className="auth-card-icon" aria-hidden="true">🎫</div>
+          <p className="auth-splash-text">Checking your ticket…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="app app-auth">
+        <Background />
+        <main className="main auth-main">
+          <Routes>
+            <Route path="/get-my-ticket" element={<Signup />} />
+            <Route path="/forgot" element={<Forgot />} />
+            <Route path="*" element={<Login />} />
+          </Routes>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -29,7 +68,6 @@ export default function App() {
           <Route path="/movies" element={<Movies />} />
           <Route path="/games" element={<Games />} />
           <Route path="/requests" element={<Requests />} />
-          <Route path="/get-my-ticket" element={<Signup />} />
           <Route path="/guide" element={<Guide />} />
           <Route path="/owner" element={<Owner />} />
           <Route path="*" element={<NotFound />} />

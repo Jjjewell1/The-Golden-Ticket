@@ -5,17 +5,32 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
+    volumes:
+      - ./data:/app/data
     environment:
       - PORT=8080
       - PUBLIC_URL=https://goldenticket.jewellcore.com
-      - JELLYFIN_URL=http://192.168.1.154:8096
-      - JELLYFIN_API_KEY=
-      - JELLYFIN_USER=Eddie
-      - ROMM_URL=http://192.168.1.154:8090
-      - ROMM_ADMIN_USER=Jjjewell1
-      - ROMM_ADMIN_PASSWORD=
-      - SEERR_URL=http://192.168.1.154:5055
-      - SEERR_API_KEY=
-      - TICKET_CODE=changeme
-      - OWNER_PIN=changeme
-      - ANNOUNCEMENTS=[]
+      - DATA_DIR=/app/data
+      - JELLYFIN_URL=${JELLYFIN_URL:-http://192.168.1.154:8096}
+      - JELLYFIN_API_KEY=${JELLYFIN_API_KEY}
+      - JELLYFIN_USER=${JELLYFIN_USER:-Eddie}
+      - ROMM_URL=${ROMM_URL:-http://192.168.1.154:8090}
+      - ROMM_ADMIN_USER=${ROMM_ADMIN_USER:-Jjjewell1}
+      - ROMM_ADMIN_PASSWORD=${ROMM_ADMIN_PASSWORD}
+      - SEERR_URL=${SEERR_URL:-http://192.168.1.154:5055}
+      - SEERR_API_KEY=${SEERR_API_KEY}
+      - TICKET_CODE=${TICKET_CODE}
+      - OWNER_PIN=${OWNER_PIN}
+      - OWNER_ACCOUNT=${OWNER_ACCOUNT:-JJ_Jewell}
+      - OWNER_ACCOUNT_PASSWORD=${OWNER_ACCOUNT_PASSWORD}
+      - ANNOUNCEMENTS=${ANNOUNCEMENTS:-[]}
+      # SESSION_SECRET must be set (any long random string) or sessions will be invalid
+      - SESSION_SECRET=${SESSION_SECRET}
+      - PUSHOVER_TOKEN=${PUSHOVER_TOKEN}
+      - PUSHOVER_USER=${PUSHOVER_USER}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-465}
+      - SMTP_SECURE=${SMTP_SECURE:-true}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - EMAIL_FROM=${EMAIL_FROM}

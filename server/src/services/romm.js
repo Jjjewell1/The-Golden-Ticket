@@ -217,6 +217,29 @@ export class Romm {
     return res.json();
   }
 
+  async ensureUserPassword(username, email, password) {
+    const existing = await this.findUser(username);
+    if (existing) {
+      const attempt = async (method) =>
+        this.request(`/api/users/${existing.id}`, {
+          method,
+          csrf: true,
+          body: { password, email },
+        });
+      let res = await attempt('PUT');
+      if (res.status === 405) res = await attempt('PATCH');
+      if (res.status === 401) {
+        this.sessionExpiresAt = 0;
+        await this.ensureSession();
+        return this.ensureUserPassword(username, email, password);
+      }
+      if (!res.ok) throw new Error(`RomM: update user failed ${res.status}`);
+      return { existing: true };
+    }
+    const user = await this.createUser(username, email, password);
+    return { existing: false, user };
+  }
+
   async fetchAsset(path) {
     if (!path) return null;
     await this.ensureSession();

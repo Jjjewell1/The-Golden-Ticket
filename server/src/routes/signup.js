@@ -1,51 +1,18 @@
 import { Router } from 'express';
 import { config } from '../config.js';
+import { hashPassword, encryptSecret, signPayload } from '../lib/crypto.js';
+import { createRateLimiter } from '../lib/ratelimit.js';
+import { validateUsername, validateEmail, validatePassword } from '../lib/validate.js';
+import { provision } from '../services/provision.js';
 
-const attempts = new Map();
-
-function rateLimited(ip) {
-  const now = Date.now();
-  const entry = attempts.get(ip);
-  if (!entry) return false;
-  if (now > entry.resetAt) {
-    attempts.delete(ip);
-    return false;
-  }
-  if (entry.count >= 5) return true;
-  entry.count += 1;
-  return false;
-}
-
-function noteAttempt(ip) {
-  const now = Date.now();
-  const entry = attempts.get(ip);
-  if (!entry || now > entry.resetAt) {
-    attempts.set(ip, { count: 1, resetAt: now + 15 * 60 * 1000 });
-  } else {
-    entry.count += 1;
-  }
-  if (attempts.size > 2000) attempts.clear();
-}
-
-function validateUsername(name) {
-  return /^[a-zA-Z0-9_\-.]{3,32}$/.test(name);
-}
-
-function validateEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function validatePassword(pw) {
-  return typeof pw === 'string' && pw.length >= 6 && pw.length <= 128;
-}
-
-export function signupRouter({ jellyfin, romm }) {
+export function signupRouter({ jellyfin, romm, store, mailer, pushover }) {
   const router = Router();
+  const limiter = createRateLimiter(5, 15 * 60 * 1000);
 
   router.post('/signup', async (req, res) => {
     const ip = req.ip || 'unknown';
 
-    if (rateLimited(ip)) {
+    if (limiter.check(ip)) {
       return res.status(429).json({ error: 'Too many signup attempts. Please wait 15 minutes.' });
     }
 
@@ -55,67 +22,121 @@ export function signupRouter({ jellyfin, romm }) {
       return res.status(503).json({ error: 'Signup is not configured yet.' });
     }
 
-    if (ticketCode !== config.ticketCode) {
-      noteAttempt(ip);
-      return res.status(403).json({ error: 'That ticket code is not right. Ask the owner for the current one.' });
-    }
+    const uErr = validateUsername(username);
+    if (uErr) return res.status(400).json({ error: uErr });
+    const eErr = validateEmail(email);
+    if (eErr) return res.status(400).json({ error: eErr });
+    const pErr = validatePassword(password);
+    if (pErr) return res.status(400).json({ error: pErr });
 
-    if (!validateUsername(username)) {
-      return res.status(400).json({ error: 'Username must be 3-32 characters (letters, numbers, _ - .).' });
-    }
-    if (!validateEmail(email)) {
-      return res.status(400).json({ error: 'That email address does not look valid.' });
-    }
-    if (!validatePassword(password)) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
-    }
+    const normalizedUsername = username.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
+    limiter.note(ip);
 
-    const normalizedUsername = username.toLowerCase();
-    noteAttempt(ip);
-
-    const existing = await Promise.all([
+    const [storeUser, storeEmail, pendingUser, pendingEmail, jf, rm] = await Promise.all([
+      store.findUserByUsername(normalizedUsername),
+      store.findUserByEmail(normalizedEmail),
+      store.findRequestByUsername(normalizedUsername),
+      store.findRequestByEmail(normalizedEmail),
       jellyfin.findUser(normalizedUsername).catch(() => null),
       romm.findUser(normalizedUsername).catch(() => null),
     ]);
-    if (existing[0] || existing[1]) {
+
+    if (storeUser || jf || rm) {
       return res.status(409).json({ error: 'That username is already taken. Try another.' });
     }
-
-    const created = { jellyfin: false, romm: false };
-    const errors = [];
-
-    try {
-      await romm.createUser(normalizedUsername, email, password);
-      created.romm = true;
-    } catch (err) {
-      errors.push({ service: 'romm', message: err.message });
+    if (storeEmail) {
+      return res.status(409).json({ error: 'An account already exists with that email.' });
+    }
+    if (pendingUser || pendingEmail) {
+      return res.status(409).json({ error: 'You already have a request waiting on the owner. Hang tight!' });
     }
 
-    try {
-      await jellyfin.createUser(normalizedUsername, password);
-      created.jellyfin = true;
-    } catch (err) {
-      errors.push({ service: 'jellyfin', message: err.message });
-    }
+    const hasCode = typeof ticketCode === 'string' && ticketCode.trim().length > 0;
 
-    if (!created.romm && !created.jellyfin) {
-      return res.status(502).json({
-        error: 'We could not create your accounts. Please let the owner know.',
-        details: errors,
+    if (hasCode) {
+      if (ticketCode.trim() !== config.ticketCode) {
+        return res.status(403).json({ error: 'That ticket code is not right.' });
+      }
+
+      const provisioned = await provision({
+        jellyfin,
+        romm,
+        username: normalizedUsername,
+        email: normalizedEmail,
+        password,
+      });
+      if (!provisioned.created.romm && !provisioned.created.jellyfin) {
+        return res.status(502).json({
+          error: 'We could not create your accounts. Please let the owner know.',
+          details: provisioned.errors,
+        });
+      }
+
+      await store.addUser({
+        id: store.nextId('u'),
+        username: normalizedUsername,
+        email: normalizedEmail,
+        role: 'member',
+        status: 'active',
+        passwordHash: hashPassword(password),
+        createdAt: new Date().toISOString(),
+        approvedAt: new Date().toISOString(),
+      });
+
+      const user = store.findUserByUsername(normalizedUsername);
+      if (mailer.enabled) await mailer.welcome(user);
+
+      return res.status(201).json({
+        ok: true,
+        username: normalizedUsername,
+        created: provisioned.created,
+        partial: provisioned.created.romm !== provisioned.created.jellyfin,
+        message:
+          provisioned.created.romm && provisioned.created.jellyfin
+            ? 'Both accounts are ready — sign in!'
+            : provisioned.created.romm
+              ? 'Your RomM account is ready, but Jellyfin is having trouble. The owner will fix it.'
+              : 'Your Jellyfin account is ready, but RomM is having trouble. The owner will fix it.',
       });
     }
 
+    if (!pushover.enabled) {
+      return res.status(503).json({
+        error: "Owner approval isn't available right now. Ask the owner or use the ticket code.",
+      });
+    }
+
+    const passwordEnc = encryptSecret(password, config.sessionSecret);
+    const requestId = store.nextId('req');
+    await store.addRequest({
+      id: requestId,
+      username: normalizedUsername,
+      email: normalizedEmail,
+      requestedAt: new Date().toISOString(),
+      passwordEnc,
+      status: 'pending',
+      note: null,
+      decidedAt: null,
+    });
+
+    const token = signPayload(
+      { req: requestId, exp: Date.now() + config.approvalLinkTtlMs },
+      config.sessionSecret,
+    );
+    const link = `${config.publicUrl}/owner/approve/${token}`;
+    await pushover.notify({
+      title: 'New Golden Ticket request 🎟️',
+      message: `${normalizedUsername} (${normalizedEmail}) wants access.`,
+      url: link,
+      urlTitle: 'Approve or deny',
+    });
+
     return res.status(201).json({
       ok: true,
+      pending: true,
       username: normalizedUsername,
-      created,
-      partial: created.romm !== created.jellyfin,
-      message:
-        created.romm && created.jellyfin
-          ? 'Both accounts are ready!'
-          : created.romm
-            ? 'Your RomM account is ready, but Jellyfin is having trouble. The owner will fix it.'
-            : 'Your Jellyfin account is ready, but RomM is having trouble. The owner will fix it.',
+      message: 'Your request is in — the owner has been pinged. You will get an email once they decide.',
     });
   });
 

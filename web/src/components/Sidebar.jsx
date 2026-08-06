@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { TicketLogo } from './Ticket.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
 import ClockWidget from './ClockWidget.jsx';
 import WeatherWidget from './WeatherWidget.jsx';
+import { useAuth } from '../lib/auth.jsx';
 import { getSessions, getRequestCount, getStatus, posterUrl } from '../lib/api.js';
 
 const navLinks = [
@@ -46,7 +47,12 @@ function useSidebarData() {
 
 export default function Sidebar({ theme, onToggleTheme, open, onClose }) {
   const { sessions, requests, status } = useSidebarData();
+  const { user, logout } = useAuth();
   const services = ['jellyfin', 'romm', 'seerr'];
+  const links = [
+    ...navLinks,
+    ...(user?.role === 'owner' ? [{ to: '/owner', label: 'Owner', icon: '🔑' }] : []),
+  ];
 
   return (
     <>
@@ -57,7 +63,7 @@ export default function Sidebar({ theme, onToggleTheme, open, onClose }) {
         </div>
 
         <nav className="sidebar-nav">
-          {navLinks.map((l) => (
+          {links.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}
@@ -135,10 +141,12 @@ export default function Sidebar({ theme, onToggleTheme, open, onClose }) {
 
         <div className="sidebar-foot">
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-          <Link to="/get-my-ticket" className="btn btn-gold btn-small" onClick={onClose}>
-            <span className="btn-label">Get my ticket</span>
-            <span className="btn-shine" aria-hidden="true" />
-          </Link>
+          <div className="sidebar-user">
+            <span className="sidebar-user-name">{user?.username}</span>
+            <button type="button" className="btn btn-ghost btn-small" onClick={logout}>
+              Sign out
+            </button>
+          </div>
         </div>
       </aside>
       <div className={`sidebar-backdrop${open ? ' show' : ''}`} onClick={onClose} />

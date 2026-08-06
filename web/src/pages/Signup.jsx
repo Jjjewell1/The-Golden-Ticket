@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { postSignup } from '../lib/api.js';
 
 const jellyfinUrl = 'https://movies.jewellcore.com';
@@ -51,6 +52,24 @@ export default function Signup() {
   }
 
   if (result) {
+    if (result.pending) {
+      return (
+        <div className="page">
+          <div className="auth-card">
+            <div className="auth-card-icon" aria-hidden="true">🕰️</div>
+            <h1 className="page-title">Request in, {result.username}!</h1>
+            <p className="page-sub">{result.message}</p>
+            <div className="signup-success-note">
+              Keep an eye on your inbox — we&apos;ll email you the moment the owner decides.
+            </div>
+            <div className="auth-links">
+              <Link to="/">Back to sign in</Link>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="page">
         <div className="signup-success">
@@ -84,8 +103,12 @@ export default function Signup() {
           </div>
 
           <p className="signup-success-note">
-            Don't forget your password — we can't see it, so if you forget, just ask the owner to reset it.
+            Don&apos;t forget your password — we can&apos;t see it, so if you forget, use the sign-in page to reset it.
           </p>
+
+          <div className="auth-links">
+            <Link to="/">Sign in now</Link>
+          </div>
         </div>
       </div>
     );
@@ -101,11 +124,11 @@ export default function Signup() {
       </div>
 
       <form className="signup-form" onSubmit={handleSubmit}>
-        <Field label="Username" value={form.username} onChange={set('username')} autoComplete="username" hint="3–32 characters. This is what you'll log in with." />
+        <Field label="Username" value={form.username} onChange={set('username')} autoComplete="username" hint="2–32 characters. This is what you'll log in with." />
         <Field label="Email" type="email" value={form.email} onChange={set('email')} autoComplete="email" hint="We'll only use this if you forget your password." />
-        <Field label="Password" type="password" value={form.password} onChange={set('password')} autoComplete="new-password" hint="At least 6 characters." />
+        <Field label="Password" type="password" value={form.password} onChange={set('password')} autoComplete="new-password" hint="At least 8 characters." />
         <Field label="Confirm password" type="password" value={form.confirm} onChange={set('confirm')} autoComplete="new-password" />
-        <Field label="Ticket code" value={form.ticketCode} onChange={set('ticketCode')} hint="The secret phrase from the owner." />
+        <Field label="Ticket code (optional)" value={form.ticketCode} onChange={set('ticketCode')} hint="Have the secret phrase from the owner? Enter it and you're in instantly. Otherwise we'll ping them for approval." />
 
         {error && <div className="banner banner-error">{error}</div>}
 
@@ -115,6 +138,9 @@ export default function Signup() {
         <p className="signup-terms">
           You're on your honour to keep this server cosy — family and friends only. 🤝
         </p>
+        <div className="auth-links">
+          <Link to="/">Already have an account? Sign in</Link>
+        </div>
       </form>
     </div>
   );

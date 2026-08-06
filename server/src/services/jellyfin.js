@@ -200,6 +200,19 @@ export class Jellyfin {
     return match ? { id: match.Id, name: match.Name } : null;
   }
 
+  async ensureUserPassword(username, password) {
+    const existing = await this.findUser(username);
+    if (existing) {
+      await this.request(`/Users/${encodeURIComponent(existing.id)}/Password`, {
+        method: 'POST',
+        body: { NewPw: password },
+      });
+      return { existing: true };
+    }
+    const user = await this.createUser(username, password);
+    return { existing: false, user };
+  }
+
   async fetchImage(itemId, imageTag, maxWidth = 600) {
     const url = new URL(`${this.url}/Items/${encodeURIComponent(itemId)}/Images/Primary`);
     url.searchParams.set('maxWidth', String(maxWidth));

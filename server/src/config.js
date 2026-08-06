@@ -1,4 +1,8 @@
 import 'dotenv/config';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const env = process.env;
 
@@ -145,8 +149,27 @@ export const config = {
   },
   ticketCode: env.TICKET_CODE || '',
   ownerPin: env.OWNER_PIN || '',
+  ownerAccount: (env.OWNER_ACCOUNT || '').toLowerCase(),
+  ownerAccountPassword: env.OWNER_ACCOUNT_PASSWORD || '',
   announcements: parseAnnouncements(env.ANNOUNCEMENTS),
   apps: parseApps(env.APPS) || DEFAULT_APPS,
   ownerApps: OWNER_APPS,
   cacheTtlMs: Number(env.CACHE_TTL_MS || 60_000),
+  sessionSecret: env.SESSION_SECRET || '',
+  dataDir: env.DATA_DIR || path.join(__dirname, '..', 'data'),
+  pushover: {
+    token: env.PUSHOVER_TOKEN || '',
+    user: env.PUSHOVER_USER || '',
+  },
+  smtp: {
+    host: env.SMTP_HOST || 'smtp.gmail.com',
+    port: Number(env.SMTP_PORT || 465),
+    secure: env.SMTP_SECURE !== 'false',
+    user: env.SMTP_USER || '',
+    pass: env.SMTP_PASS || '',
+    from: env.EMAIL_FROM || env.SMTP_USER || '',
+    dry: env.SMTP_DRY === 'true',
+  },
+  approvalLinkTtlMs: 7 * 24 * 60 * 60 * 1000,
+  resetTokenTtlMs: 15 * 60 * 1000,
 };
