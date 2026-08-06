@@ -10,6 +10,7 @@ services:
       - PUBLIC_URL=https://goldenticket.jewellcore.com
       - JELLYFIN_URL=http://192.168.1.154:8096
       - JELLYFIN_API_KEY=
+      - JELLYFIN_USER=Eddie
       - ROMM_URL=http://192.168.1.154:8090
       - ROMM_ADMIN_USER=Jjjewell1
       - ROMM_ADMIN_PASSWORD=
