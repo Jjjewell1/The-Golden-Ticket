@@ -7,7 +7,7 @@ COPY web/ .
 RUN npm run build
 
 # ---- Install server production dependencies ----
-FROM node:22-alpine AS deps
+FROM node:22-slim AS deps
 WORKDIR /app
 COPY server/package*.json ./
 RUN npm ci --omit=dev
