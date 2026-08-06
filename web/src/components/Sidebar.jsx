@@ -1,0 +1,142 @@
+import { useEffect, useState } from 'react';
+import { NavLink, Link } from 'react-router-dom';
+import { TicketLogo } from './Ticket.jsx';
+import ThemeToggle from './ThemeToggle.jsx';
+import { getSessions, getRequestCount, getStatus, posterUrl } from '../lib/api.js';
+
+const navLinks = [
+  { to: '/', label: 'Home', icon: '🏠', end: true },
+  { to: '/movies', label: 'Movies', icon: '🎬' },
+  { to: '/games', label: 'Games', icon: '🕹️' },
+  { to: '/requests', label: 'Requests', icon: '🎟️' },
+  { to: '/guide', label: 'Guide', icon: '🧭' },
+];
+
+const SERVICE_LABELS = { jellyfin: 'Jellyfin', romm: 'RomM', seerr: 'Requests' };
+
+function useSidebarData() {
+  const [state, setState] = useState({ sessions: [], requests: null, status: null });
+
+  useEffect(() => {
+    let alive = true;
+    const load = () => {
+      Promise.allSettled([getSessions(), getRequestCount(), getStatus()]).then(
+        ([s, r, st]) => {
+          if (!alive) return;
+          setState({
+            sessions: s.status === 'fulfilled' ? s.value : [],
+            requests: r.status === 'fulfilled' ? r.value.count : null,
+            status: st.status === 'fulfilled' ? st.value : null,
+          });
+        }
+      );
+    };
+    load();
+    const t = setInterval(load, 30000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, []);
+
+  return state;
+}
+
+export default function Sidebar({ theme, onToggleTheme, open, onClose }) {
+  const { sessions, requests, status } = useSidebarData();
+  const services = ['jellyfin', 'romm', 'seerr'];
+
+  return (
+    <>
+      <aside className={`sidebar${open ? ' open' : ''}`}>
+        <div className="sidebar-brand">
+          <TicketLogo size={38} />
+          <span className="sidebar-brand-name">The Golden Ticket</span>
+        </div>
+
+        <nav className="sidebar-nav">
+          {navLinks.map((l) => (
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end={l.end}
+              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+              onClick={onClose}
+            >
+              <span className="sidebar-link-icon">{l.icon}</span>
+              {l.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="sidebar-widgets">
+          <div className="sidebar-widget">
+            <span className="sidebar-widget-title">🍿 On screen now</span>
+            {sessions.length === 0 ? (
+              <p className="sidebar-widget-empty">Popcorn&apos;s ready — nothing playing yet.</p>
+            ) : (
+              <div className="sidebar-sessions">
+                {sessions.slice(0, 3).map((s, i) => (
+                  <div key={i} className="sidebar-session">
+                    {s.imageId ? (
+                      <img
+                        className="sidebar-session-thumb"
+                        src={posterUrl(s.imageId, s.imageTag, 120)}
+                        alt=""
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span className="sidebar-session-dot" data-paused={s.paused} />
+                    )}
+                    <span className="sidebar-session-text">
+                      <strong>{s.user}</strong>
+                      <em>
+                        {s.series || s.item}
+                        {s.episode ? ` · S${s.season}E${s.episode}` : ''}
+                      </em>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="sidebar-widget">
+            <span className="sidebar-widget-title">🎟️ Request queue</span>
+            <div className="sidebar-queue">
+              <span className="sidebar-queue-count">{requests ?? '…'}</span>
+              <span className="sidebar-queue-label">
+                {requests === 1 ? 'request waiting' : 'requests waiting'}
+              </span>
+            </div>
+          </div>
+
+          <div className="sidebar-widget">
+            <span className="sidebar-widget-title">📡 All systems</span>
+            {status ? (
+              <div className="sidebar-status">
+                {services.map((k) => (
+                  <span key={k} className="sidebar-status-item">
+                    <span className="sidebar-status-dot" data-on={!!status.services?.[k]} />
+                    {SERVICE_LABELS[k]}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="sidebar-widget-empty">Checking…</p>
+            )}
+          </div>
+        </div>
+
+        <div className="sidebar-foot">
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+          <Link to="/get-my-ticket" className="btn btn-gold btn-small" onClick={onClose}>
+            <span className="btn-label">Get my ticket</span>
+            <span className="btn-shine" aria-hidden="true" />
+          </Link>
+        </div>
+      </aside>
+      <div className={`sidebar-backdrop${open ? ' show' : ''}`} onClick={onClose} />
+    </>
+  );
+}

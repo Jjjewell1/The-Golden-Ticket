@@ -99,16 +99,16 @@ export default function Theater() {
       c.lineTo(W / 2 - botW / 2, bottom);
       c.closePath();
       const g = c.createLinearGradient(0, top, 0, bottom);
-      g.addColorStop(0, '#171c2e');
-      g.addColorStop(1, '#0a0c16');
+      g.addColorStop(0, '#1a1b3d');
+      g.addColorStop(1, '#0c0c22');
       c.fillStyle = g;
       c.fill();
-      c.strokeStyle = 'rgba(130,150,255,0.20)';
+      c.strokeStyle = 'rgba(167,139,250,0.28)';
       c.lineWidth = 1.5;
       c.stroke();
       const inner = c.createLinearGradient(0, top, 0, bottom);
-      inner.addColorStop(0, 'rgba(150,170,255,0.05)');
-      inner.addColorStop(1, 'rgba(150,170,255,0)');
+      inner.addColorStop(0, 'rgba(167,139,250,0.07)');
+      inner.addColorStop(1, 'rgba(167,139,250,0)');
       c.fillStyle = inner;
       c.fill();
     }
@@ -130,7 +130,7 @@ export default function Theater() {
       const cy = y - bob;
       const hh = h * (1 - sit * 0.72);
       c.save();
-      c.fillStyle = '#0d0f1a';
+      c.fillStyle = '#151432';
       c.strokeStyle = 'rgba(255,255,255,0.05)';
       c.lineWidth = 1;
       c.beginPath();
@@ -243,8 +243,8 @@ export default function Theater() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const pulse = 0.028 + 0.02 * Math.sin(t * 0.0012);
       const cg = ctx.createRadialGradient(W / 2, H * 0.24, 0, W / 2, H * 0.24, W * 0.5);
-      cg.addColorStop(0, `rgba(150,170,255,${pulse.toFixed(4)})`);
-      cg.addColorStop(1, 'rgba(150,170,255,0)');
+      cg.addColorStop(0, `rgba(167,139,250,${pulse.toFixed(4)})`);
+      cg.addColorStop(1, 'rgba(167,139,250,0)');
       ctx.fillStyle = cg;
       ctx.fillRect(0, 0, W, H);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -260,9 +260,9 @@ export default function Theater() {
         c.setTransform(dpr, 0, 0, dpr, 0, 0);
         if (b === 0) {
           const g = c.createLinearGradient(0, 0, 0, H);
-          g.addColorStop(0, '#0a0912');
-          g.addColorStop(0.45, '#07060e');
-          g.addColorStop(1, '#04040a');
+          g.addColorStop(0, '#0d0c1d');
+          g.addColorStop(0.45, '#0a0918');
+          g.addColorStop(1, '#05050f');
           c.fillStyle = g;
           c.fillRect(0, 0, W, H);
           drawScreen(c);

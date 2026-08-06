@@ -216,6 +216,21 @@ export default function Home() {
             </a>
           </div>
 
+          <div className="hero-floaters" aria-hidden="true">
+            <span className="hero-floater" style={{ '--fx': '-7%', '--fy': '6%', '--fd': '0s' }}>
+              🍿
+            </span>
+            <span className="hero-floater" style={{ '--fx': '94%', '--fy': '2%', '--fd': '-1.2s' }}>
+              🎬
+            </span>
+            <span className="hero-floater" style={{ '--fx': '97%', '--fy': '68%', '--fd': '-2s' }}>
+              🕹️
+            </span>
+            <span className="hero-floater" style={{ '--fx': '-5%', '--fy': '74%', '--fd': '-0.6s' }}>
+              🎮
+            </span>
+          </div>
+
           <div className="hero-stats hero-anim" style={{ '--d': '480ms' }}>
             <Stat value={movies.length} label="Movies in" />
             <Stat value={series.length} label="Shows in" />

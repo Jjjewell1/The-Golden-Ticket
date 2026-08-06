@@ -16,7 +16,7 @@ export default function AppCard({ app, online }) {
       target="_blank"
       rel="noreferrer"
       className="app-card"
-      style={{ '--accent': app.accent || '#d4af37' }}
+      style={{ '--accent': app.accent || '#a855f7' }}
     >
       <span className="app-card-glow" aria-hidden="true" />
       <span className="app-card-top">

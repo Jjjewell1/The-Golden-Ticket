@@ -8,7 +8,25 @@
       name="description"
       content="You've been invited. Movies, games, and a little bit of magic — all in one place."
     />
-    <meta name="theme-color" content="#0b0a12" />
+    <meta name="theme-color" content="#0d0c1d" />
+
+    <script>
+      (function () {
+        try {
+          var t = null;
+          try {
+            var stored = localStorage.getItem('gt-theme');
+            if (stored === 'light' || stored === 'dark') t = stored;
+          } catch (e) {}
+          var forced = new URLSearchParams(window.location.search).get('theme');
+          if (forced === 'light' || forced === 'dark') t = forced;
+          if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -38,7 +56,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
   </head>

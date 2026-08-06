@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Header from './components/Header.jsx';
-import Footer from './components/Footer.jsx';
+import { useTheme } from './lib/theme.jsx';
 import Theater from './components/Theater.jsx';
+import Blobs from './components/Blobs.jsx';
+import Sidebar from './components/Sidebar.jsx';
+import Topbar from './components/Topbar.jsx';
+import Footer from './components/Footer.jsx';
 import Home from './pages/Home.jsx';
 import Movies from './pages/Movies.jsx';
 import Games from './pages/Games.jsx';
@@ -12,10 +16,14 @@ import Owner from './pages/Owner.jsx';
 import NotFound from './pages/NotFound.jsx';
 
 export default function App() {
+  const { theme, toggle } = useTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className="app">
-      <Theater />
-      <Header />
+      {theme === 'dark' ? <Theater /> : <Blobs />}
+      <Sidebar theme={theme} onToggleTheme={toggle} open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <Topbar theme={theme} onToggleTheme={toggle} onMenu={() => setMenuOpen((o) => !o)} />
       <main className="main">
         <Routes>
           <Route path="/" element={<Home />} />
