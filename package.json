@@ -1,0 +1,12 @@
+{
+  "name": "the-golden-ticket",
+  "private": true,
+  "version": "1.0.0",
+  "description": "The Golden Ticket - a friendly hub for friends & family into the Jewellcore server",
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:web": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "start": "npm --prefix server start"
+  }
+}

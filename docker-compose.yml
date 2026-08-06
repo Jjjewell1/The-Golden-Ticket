@@ -1,0 +1,20 @@
+services:
+  golden-ticket:
+    build: .
+    container_name: golden-ticket
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - PUBLIC_URL=https://goldenticket.jewellcore.com
+      - JELLYFIN_URL=http://192.168.1.154:8096
+      - JELLYFIN_API_KEY=
+      - ROMM_URL=http://192.168.1.154:8090
+      - ROMM_ADMIN_USER=Jjjewell1
+      - ROMM_ADMIN_PASSWORD=
+      - SEERR_URL=http://192.168.1.154:5055
+      - SEERR_API_KEY=
+      - TICKET_CODE=changeme
+      - OWNER_PIN=changeme
+      - ANNOUNCEMENTS=[]
