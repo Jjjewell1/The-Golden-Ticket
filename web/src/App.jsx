@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useTheme } from './lib/theme.jsx';
-import Theater from './components/Theater.jsx';
-import Blobs from './components/Blobs.jsx';
+import Background from './components/Background.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Topbar from './components/Topbar.jsx';
 import Footer from './components/Footer.jsx';
@@ -21,7 +20,7 @@ export default function App() {
 
   return (
     <div className="app">
-      {theme === 'dark' ? <Theater /> : <Blobs />}
+      <Background />
       <Sidebar theme={theme} onToggleTheme={toggle} open={menuOpen} onClose={() => setMenuOpen(false)} />
       <Topbar theme={theme} onToggleTheme={toggle} onMenu={() => setMenuOpen((o) => !o)} />
       <main className="main">

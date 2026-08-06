@@ -3,6 +3,7 @@ import { getGames, gameCoverUrl } from '../lib/api.js';
 import { useLibrary, useFilterGroups } from '../lib/useLibrary.js';
 import PosterCard from '../components/PosterCard.jsx';
 import FilterToolbar from '../components/FilterToolbar.jsx';
+import DetailModal from '../components/DetailModal.jsx';
 import { Reveal } from '../lib/useFx.jsx';
 
 const rommUrl = 'https://games.jewellcore.com';
@@ -11,6 +12,7 @@ export default function Games() {
   const { items, error } = useLibrary(getGames);
   const [query, setQuery] = useState('');
   const [consoleId, setConsoleId] = useState('all');
+  const [selected, setSelected] = useState(null);
 
   const consoleGroups = useFilterGroups(items, (g) => [g.platform]);
   const chips = useMemo(
@@ -96,8 +98,9 @@ export default function Games() {
                     image={gameCoverUrl(g.coverPath) || g.coverUrl || null}
                     title={g.name}
                     subtitle={g.platform}
-                    badge="Play"
-                    href={rommUrl}
+                    badge="Details"
+                    emoji="🕹️"
+                    onClick={() => setSelected(g)}
                   />
                 ))}
               </div>
@@ -111,6 +114,8 @@ export default function Games() {
           </div>
         </>
       )}
+
+      <DetailModal item={selected} kind="game" onClose={() => setSelected(null)} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-export default function PosterCard({ image, title, subtitle, badge, href }) {
+export default function PosterCard({ image, title, subtitle, badge, href, onClick, emoji = '🎬' }) {
   const inner = (
     <>
       <div className="poster-img">
@@ -6,7 +6,7 @@ export default function PosterCard({ image, title, subtitle, badge, href }) {
           <img src={image} alt={title} loading="lazy" />
         ) : (
           <div className="poster-fallback" aria-hidden="true">
-            🎬
+            {emoji}
           </div>
         )}
         {badge && <span className="poster-badge">{badge}</span>}
@@ -17,6 +17,15 @@ export default function PosterCard({ image, title, subtitle, badge, href }) {
       </div>
     </>
   );
+
+  if (onClick) {
+    return (
+      <button type="button" className="poster-card poster-card-btn" onClick={onClick} aria-label={`View details for ${title}`}>
+        {inner}
+      </button>
+    );
+  }
+
   return href ? (
     <a href={href} target="_blank" rel="noreferrer" className="poster-card">
       {inner}

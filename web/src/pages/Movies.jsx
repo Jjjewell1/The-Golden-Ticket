@@ -3,18 +3,16 @@ import { getMovies, posterUrl } from '../lib/api.js';
 import { useLibrary, useFilterGroups } from '../lib/useLibrary.js';
 import PosterCard from '../components/PosterCard.jsx';
 import FilterToolbar from '../components/FilterToolbar.jsx';
+import DetailModal from '../components/DetailModal.jsx';
 import { Reveal } from '../lib/useFx.jsx';
 
 const jellyfinUrl = 'https://movies.jewellcore.com';
-
-function movieHref(m) {
-  return `${jellyfinUrl}/web/index.html#/details?id=${encodeURIComponent(m.id)}`;
-}
 
 export default function Movies() {
   const { items, error } = useLibrary(getMovies);
   const [query, setQuery] = useState('');
   const [genreId, setGenreId] = useState('all');
+  const [selected, setSelected] = useState(null);
 
   const genreGroups = useFilterGroups(items, (m) => m.genres || []);
   const chips = useMemo(
@@ -97,8 +95,8 @@ export default function Movies() {
                     image={m.imageTag ? posterUrl(m.id, m.imageTag, 300) : null}
                     title={m.name}
                     subtitle={m.year ? String(m.year) : 'Movie'}
-                    badge="Watch"
-                    href={movieHref(m)}
+                    badge="Details"
+                    onClick={() => setSelected(m)}
                   />
                 ))}
               </div>
@@ -112,6 +110,8 @@ export default function Movies() {
           </div>
         </>
       )}
+
+      <DetailModal item={selected} kind="movie" onClose={() => setSelected(null)} />
     </div>
   );
 }

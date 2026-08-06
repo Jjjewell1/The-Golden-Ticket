@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { TicketLogo } from './Ticket.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
+import ClockWidget from './ClockWidget.jsx';
+import WeatherWidget from './WeatherWidget.jsx';
 import { getSessions, getRequestCount, getStatus, posterUrl } from '../lib/api.js';
 
 const navLinks = [
@@ -70,6 +72,9 @@ export default function Sidebar({ theme, onToggleTheme, open, onClose }) {
         </nav>
 
         <div className="sidebar-widgets">
+          <ClockWidget />
+          <WeatherWidget />
+
           <div className="sidebar-widget">
             <span className="sidebar-widget-title">🍿 On screen now</span>
             {sessions.length === 0 ? (
