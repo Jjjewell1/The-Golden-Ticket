@@ -2,7 +2,13 @@ import { Router } from 'express';
 import { config } from '../config.js';
 import { hashPassword, verifyPayload } from '../lib/crypto.js';
 import { requireOwner } from '../lib/session.js';
-import { validateUsername, validateEmail, validatePassword } from '../lib/validate.js';
+import {
+  validateUsername,
+  validateEmail,
+  validatePassword,
+  validateDisplayName,
+} from '../lib/validate.js';
+import { validateAvatar } from '../lib/avatars.js';
 import { publicUser } from '../lib/sanitize.js';
 import { provision } from '../services/provision.js';
 import { decideRequest } from '../services/decide.js';
@@ -105,6 +111,56 @@ export function ownerRouter({ store, jellyfin, romm, mailer, secret }) {
     const link = `${config.publicUrl}/reset/${raw}`;
     await mailer.resetLink(user.email, user.username, link);
     res.json({ ok: true });
+  });
+
+  router.patch('/owner/users/:id', ownerOnly, async (req, res) => {
+    const user = store.findUserById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+
+    const body = req.body || {};
+    const keys = ['displayName', 'avatar', 'email', 'password'].filter((k) => k in body);
+    if (keys.length === 0) return res.status(400).json({ error: 'Nothing to update.' });
+
+    const nErr = validateDisplayName(body.displayName);
+    if (nErr) return res.status(400).json({ error: nErr });
+    const aErr = validateAvatar(body.avatar);
+    if (aErr) return res.status(400).json({ error: aErr });
+    if (keys.includes('email')) {
+      const eErr = validateEmail(body.email);
+      if (eErr) return res.status(400).json({ error: eErr });
+      const ne = body.email.trim().toLowerCase();
+      const existing = store.findUserByEmail(ne);
+      if (existing && existing.id !== user.id) {
+        return res.status(409).json({ error: 'That email is already in use.' });
+      }
+    }
+    if (keys.includes('password')) {
+      const pErr = validatePassword(body.password);
+      if (pErr) return res.status(400).json({ error: pErr });
+    }
+
+    const patch = {};
+    if (keys.includes('displayName')) {
+      patch.displayName = typeof body.displayName === 'string' ? body.displayName.trim() : '';
+    }
+    if (keys.includes('avatar')) patch.avatar = body.avatar || '';
+    if (keys.includes('email')) patch.email = body.email.trim().toLowerCase();
+
+    let synced = [];
+    if (keys.includes('password')) {
+      patch.passwordHash = hashPassword(body.password);
+      synced = await Promise.allSettled([
+        jellyfin.ensureUserPassword(user.username, body.password),
+        romm.ensureUserPassword(user.username, user.email, body.password),
+      ]).then((r) => r.map((x) => (x.status === 'fulfilled' ? x.value : { error: x.reason.message })));
+    }
+
+    const updated = await store.updateUser(user.id, patch);
+    res.json({
+      ok: true,
+      user: publicUser(updated),
+      synced,
+    });
   });
 
   router.post('/owner/decision/:requestId', ownerOnly, async (req, res) => {

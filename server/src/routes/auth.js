@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { hashPassword, verifyPassword } from '../lib/crypto.js';
 import { createSessionCookie, clearSessionCookie, requireAuth } from '../lib/session.js';
 import { createRateLimiter } from '../lib/ratelimit.js';
-import { validatePassword } from '../lib/validate.js';
+import { validatePassword, validateDisplayName } from '../lib/validate.js';
+import { validateAvatar } from '../lib/avatars.js';
 import { publicUser } from '../lib/sanitize.js';
 
 export function authRouter({ store, jellyfin, romm, mailer, secret, config }) {
@@ -35,8 +36,43 @@ export function authRouter({ store, jellyfin, romm, mailer, secret, config }) {
     res.json({ ok: true });
   });
 
+  router.get('/auth/profiles', (req, res) => {
+    const profiles = store
+      .users()
+      .filter((u) => u.status === 'active')
+      .map((u) => ({
+        id: u.id,
+        username: u.username,
+        displayName: u.displayName || null,
+        avatar: u.avatar || null,
+      }));
+    res.json({ profiles });
+  });
+
   router.get('/auth/me', auth, (req, res) => {
     res.json({ user: publicUser(req.user) });
+  });
+
+  router.patch('/auth/me', auth, (req, res) => {
+    const { displayName, avatar } = req.body || {};
+    if (!('displayName' in (req.body || {})) && !('avatar' in (req.body || {}))) {
+      return res.status(400).json({ error: 'Nothing to update.' });
+    }
+    const nErr = validateDisplayName(displayName);
+    if (nErr) return res.status(400).json({ error: nErr });
+    const aErr = validateAvatar(avatar);
+    if (aErr) return res.status(400).json({ error: aErr });
+
+    const patch = {};
+    if ('displayName' in (req.body || {})) {
+      patch.displayName = typeof displayName === 'string' ? displayName.trim() : '';
+    }
+    if ('avatar' in (req.body || {})) {
+      patch.avatar = avatar || '';
+    }
+    store.updateUser(req.user.id, patch).then((user) => {
+      res.json({ ok: true, user: publicUser(user) });
+    });
   });
 
   router.post('/auth/forgot', async (req, res) => {

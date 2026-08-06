@@ -7,8 +7,11 @@ import {
   postOwnerAddUser,
   postOwnerDecision,
   postOwnerUserAction,
+  patchOwnerUser,
 } from '../lib/api.js';
 import AppCard from '../components/AppCard.jsx';
+import Avatar from '../components/Avatar.jsx';
+import AvatarPicker from '../components/AvatarPicker.jsx';
 
 function fmt(d) {
   if (!d) return '';
@@ -19,17 +22,24 @@ function fmt(d) {
 export default function Owner() {
   const { user } = useAuth();
   const [ownerApps, setOwnerApps] = useState([]);
+  const [avatars, setAvatars] = useState([]);
   const [requests, setRequests] = useState([]);
   const [members, setMembers] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [note, setNote] = useState({});
   const [addForm, setAddForm] = useState({ username: '', email: '', password: '' });
+  const [editing, setEditing] = useState(null);
 
   const isOwner = user?.role === 'owner';
 
   useEffect(() => {
-    getConfig().then((c) => setOwnerApps(c.ownerApps || [])).catch(() => {});
+    getConfig()
+      .then((c) => {
+        setOwnerApps(c.ownerApps || []);
+        setAvatars(c.avatars || []);
+      })
+      .catch(() => {});
   }, []);
 
   const reload = () => {
@@ -66,6 +76,40 @@ export default function Owner() {
       setError(data.error || 'Something went wrong.');
       return;
     }
+    reload();
+  }
+
+  function openEdit(member) {
+    setError('');
+    setEditing({
+      id: member.id,
+      displayName: member.displayName || '',
+      avatar: member.avatar || '',
+      email: member.email || '',
+      password: '',
+    });
+  }
+
+  async function saveEdit(e) {
+    e.preventDefault();
+    if (!editing) return;
+    setBusy(true);
+    setError('');
+    const payload = {
+      displayName: editing.displayName.trim(),
+      avatar: editing.avatar,
+    };
+    if (editing.email && editing.email !== members.find((m) => m.id === editing.id)?.email) {
+      payload.email = editing.email;
+    }
+    if (editing.password) payload.password = editing.password;
+    const { ok, data } = await patchOwnerUser(editing.id, payload);
+    setBusy(false);
+    if (!ok) {
+      setError(data.error || 'Something went wrong.');
+      return;
+    }
+    setEditing(null);
     reload();
   }
 
@@ -140,31 +184,92 @@ export default function Owner() {
         <h2 className="mgmt-title">👥 Members</h2>
         <div className="mgmt-list">
           {members.map((m) => (
-            <div key={m.id} className="mgmt-row">
-              <div className="mgmt-main">
-                <strong>
-                  {m.username}
-                  {m.role === 'owner' ? <span className="mgmt-tag">owner</span> : null}
-                  {m.status !== 'active' ? <span className="mgmt-tag mgmt-tag-off">disabled</span> : null}
-                </strong>
-                <span className="mgmt-sub">{m.email || 'no email'}</span>
+            <div key={m.id} className="mgmt-card">
+              <div className="mgmt-row">
+                <div className="mgmt-main mgmt-main-user">
+                  <strong>
+                    <Avatar
+                      avatar={m.avatar}
+                      name={m.displayName || m.username}
+                      size={36}
+                      className="mgmt-avatar"
+                    />
+                    {m.displayName || m.username}
+                    {m.username !== m.displayName ? <span className="mgmt-user-handle">@{m.username}</span> : null}
+                    {m.role === 'owner' ? <span className="mgmt-tag">owner</span> : null}
+                    {m.status !== 'active' ? <span className="mgmt-tag mgmt-tag-off">disabled</span> : null}
+                  </strong>
+                  <span className="mgmt-sub">{m.email || 'no email'}</span>
+                </div>
+                <div className="mgmt-side">
+                  {m.role !== 'owner' ? (
+                    <>
+                      <button className="btn btn-ghost btn-small" disabled={busy} onClick={() => userAction(m, m.status === 'active' ? 'disable' : 'enable')}>
+                        {m.status === 'active' ? 'Disable' : 'Enable'}
+                      </button>
+                      <button className="btn btn-ghost btn-small" disabled={busy} onClick={() => userAction(m, 'reset-password')}>
+                        Reset password
+                      </button>
+                    </>
+                  ) : null}
+                  <button className="btn btn-ghost btn-small" disabled={busy} onClick={() => openEdit(m)}>
+                    Edit
+                  </button>
+                </div>
               </div>
-              <div className="mgmt-side">
-                {m.role !== 'owner' ? (
-                  <>
-                    <button
-                      className="btn btn-ghost btn-small"
-                      disabled={busy}
-                      onClick={() => userAction(m, m.status === 'active' ? 'disable' : 'enable')}
-                    >
-                      {m.status === 'active' ? 'Disable' : 'Enable'}
+
+              {editing && editing.id === m.id ? (
+                <form className="mgmt-edit" onSubmit={saveEdit}>
+                  <div className="mgmt-edit-grid">
+                    <label className="field">
+                      <span className="field-label">Display name</span>
+                      <input
+                        type="text"
+                        maxLength={40}
+                        placeholder={m.username}
+                        value={editing.displayName}
+                        onChange={(e) => setEditing((ed) => ({ ...ed, displayName: e.target.value }))}
+                      />
+                    </label>
+                    <label className="field">
+                      <span className="field-label">Email</span>
+                      <input
+                        type="email"
+                        value={editing.email}
+                        onChange={(e) => setEditing((ed) => ({ ...ed, email: e.target.value }))}
+                      />
+                    </label>
+                    <label className="field">
+                      <span className="field-label">New password</span>
+                      <input
+                        type="password"
+                        placeholder="Leave blank to keep"
+                        value={editing.password}
+                        autoComplete="new-password"
+                        onChange={(e) => setEditing((ed) => ({ ...ed, password: e.target.value }))}
+                      />
+                      <span className="field-hint">8+ characters. Synced to Jellyfin &amp; RomM.</span>
+                    </label>
+                  </div>
+                  <div className="field">
+                    <span className="field-label">Avatar</span>
+                    <AvatarPicker
+                      value={editing.avatar}
+                      onChange={(v) => setEditing((ed) => ({ ...ed, avatar: v }))}
+                      palette={avatars}
+                      name={editing.displayName.trim() || m.username}
+                    />
+                  </div>
+                  <div className="mgmt-edit-actions">
+                    <button type="submit" className="btn btn-gold btn-small" disabled={busy}>
+                      Save
                     </button>
-                    <button className="btn btn-ghost btn-small" disabled={busy} onClick={() => userAction(m, 'reset-password')}>
-                      Reset password
+                    <button type="button" className="btn btn-ghost btn-small" disabled={busy} onClick={() => setEditing(null)}>
+                      Cancel
                     </button>
-                  </>
-                ) : null}
-              </div>
+                  </div>
+                </form>
+              ) : null}
             </div>
           ))}
         </div>

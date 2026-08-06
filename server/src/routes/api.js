@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { createTtlCache } from '../cache.js';
 import { config } from '../config.js';
 import { requireAuth } from '../lib/session.js';
+import { AVATAR_PALETTE } from '../lib/avatars.js';
 
 export function apiRouter({ jellyfin, romm, seerr, store, secret, pushover }) {
   const router = Router();
@@ -19,6 +20,7 @@ export function apiRouter({ jellyfin, romm, seerr, store, secret, pushover }) {
       ownerApps: config.ownerApps,
       announcements: config.announcements,
       ownerPinSet: !!config.ownerPin,
+      avatars: AVATAR_PALETTE,
     });
   });
 

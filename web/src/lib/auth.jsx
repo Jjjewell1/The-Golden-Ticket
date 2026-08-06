@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { getMe, postLogin, postLogout } from './api.js';
+import { getMe, postLogin, postLogout, patchMe } from './api.js';
 
 const AuthContext = createContext(null);
 
@@ -38,7 +38,18 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
+  const updateProfile = useCallback(async (patch) => {
+    const { ok, data } = await patchMe(patch);
+    if (!ok) throw new Error(data.error || 'Could not save your profile.');
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout, updateProfile }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

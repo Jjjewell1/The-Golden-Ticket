@@ -14,6 +14,16 @@ async function postJson(path, payload) {
   return { ok: res.ok, status: res.status, data };
 }
 
+async function patchJson(path, payload) {
+  const res = await fetch(path, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload ?? {}),
+  });
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data };
+}
+
 export function getConfig() {
   return getJson('/api/config');
 }
@@ -70,6 +80,14 @@ export function getMe() {
   return getJson('/api/auth/me');
 }
 
+export function getAuthProfiles() {
+  return getJson('/api/auth/profiles');
+}
+
+export async function patchMe(payload) {
+  return patchJson('/api/auth/me', payload);
+}
+
 export async function postForgot(payload) {
   return postJson('/api/auth/forgot', payload);
 }
@@ -96,6 +114,10 @@ export async function postOwnerDecision(requestId, payload) {
 
 export async function postOwnerUserAction(userId, action) {
   return postJson(`/api/owner/users/${encodeURIComponent(userId)}/${action}`);
+}
+
+export async function patchOwnerUser(userId, payload) {
+  return patchJson(`/api/owner/users/${encodeURIComponent(userId)}`, payload);
 }
 
 export async function verifyOwnerPin(pin) {

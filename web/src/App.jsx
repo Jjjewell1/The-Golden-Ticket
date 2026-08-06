@@ -15,6 +15,7 @@ import Login from './pages/Login.jsx';
 import Forgot from './pages/Forgot.jsx';
 import Guide from './pages/Guide.jsx';
 import Owner from './pages/Owner.jsx';
+import Profile from './pages/Profile.jsx';
 import NotFound from './pages/NotFound.jsx';
 
 export default function App() {
@@ -70,6 +71,7 @@ function Shell() {
           <Route path="/requests" element={<Requests />} />
           <Route path="/guide" element={<Guide />} />
           <Route path="/owner" element={<Owner />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

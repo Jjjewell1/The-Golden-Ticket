@@ -1,4 +1,5 @@
 import ThemeToggle from './ThemeToggle.jsx';
+import Avatar from './Avatar.jsx';
 import { useAuth } from '../lib/auth.jsx';
 
 export default function Topbar({ theme, onToggleTheme, onMenu }) {
@@ -16,7 +17,8 @@ export default function Topbar({ theme, onToggleTheme, onMenu }) {
         <ThemeToggle theme={theme} onToggle={onToggleTheme} className="theme-toggle-topbar" />
         {user && (
           <div className="topbar-user">
-            <span className="topbar-user-name">{user.username}</span>
+            <Avatar avatar={user.avatar} name={user.displayName || user.username} size={30} />
+            <span className="topbar-user-name">{user.displayName || user.username}</span>
             <button type="button" className="btn btn-ghost btn-small" onClick={logout}>
               Sign out
             </button>

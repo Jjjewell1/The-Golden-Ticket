@@ -841,6 +841,16 @@ a {
   color: #f87171;
 }
 
+.banner-ok {
+  border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+[data-theme='dark'] .banner-ok {
+  color: #34d399;
+}
+
 .loading {
   display: flex;
   flex-direction: column;
@@ -3086,6 +3096,178 @@ button.poster-card:focus-visible {
   text-decoration: underline;
 }
 
+.linklike {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.linklike:hover {
+  text-decoration: underline;
+}
+
+/* ---------- avatars & profiles ---------- */
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  user-select: none;
+  background: var(--card-strong);
+  border: 1px solid var(--border);
+  color: var(--text);
+  line-height: 1;
+}
+
+.avatar-img {
+  display: block;
+  object-fit: cover;
+}
+
+.avatar-tile {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.25), transparent 55%),
+    var(--grad-a);
+  color: #fff;
+  border-color: transparent;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 18px;
+  margin-top: 30px;
+}
+
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 8px 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: transform 0.25s var(--ease-bounce), background 0.25s;
+}
+
+.profile-card:hover {
+  transform: translateY(-4px) scale(1.04);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.profile-card-avatar .avatar {
+  transition: box-shadow 0.25s, border-color 0.25s;
+}
+
+.profile-card:hover .profile-card-avatar .avatar {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--ring);
+}
+
+.profile-card-name {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-profile-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+}
+
+.auth-profile-head .page-title {
+  margin: 0;
+  font-size: clamp(1.4rem, 4vw, 1.9rem);
+}
+
+.profile-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+
+.profile-preview-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.avatar-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.avatar-picker-current {
+  display: flex;
+  justify-content: center;
+}
+
+.avatar-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  gap: 10px;
+  max-width: 460px;
+}
+
+.avatar-opt {
+  width: 100%;
+  aspect-ratio: 1;
+  font-size: 22px;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  background: var(--input-bg);
+  cursor: pointer;
+  transition: transform 0.2s var(--ease-bounce), border-color 0.2s, box-shadow 0.2s;
+}
+
+.avatar-opt:hover {
+  transform: translateY(-2px) scale(1.06);
+  border-color: var(--border-strong);
+}
+
+.avatar-opt.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.avatar-picker-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.avatar-picker-err {
+  color: #ef4444;
+}
+
+[data-theme='dark'] .avatar-picker-err {
+  color: #f87171;
+}
+
 .topbar-right {
   display: flex;
   align-items: center;
@@ -3167,6 +3349,48 @@ button.poster-card:focus-visible {
 
 .mgmt-main strong {
   font-size: 15px;
+}
+
+.mgmt-main-user strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mgmt-user-handle {
+  font-size: 12.5px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.mgmt-card {
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+.mgmt-card .mgmt-row {
+  background: none;
+  border: none;
+}
+
+.mgmt-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 16px 18px;
+}
+
+.mgmt-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.mgmt-edit-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .mgmt-sub {

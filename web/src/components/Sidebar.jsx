@@ -4,6 +4,7 @@ import { TicketLogo } from './Ticket.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
 import ClockWidget from './ClockWidget.jsx';
 import WeatherWidget from './WeatherWidget.jsx';
+import Avatar from './Avatar.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { getSessions, getRequestCount, getStatus, posterUrl } from '../lib/api.js';
 
@@ -13,6 +14,7 @@ const navLinks = [
   { to: '/games', label: 'Games', icon: '🕹️' },
   { to: '/requests', label: 'Requests', icon: '🎟️' },
   { to: '/guide', label: 'Guide', icon: '🧭' },
+  { to: '/profile', label: 'My profile', icon: '🎩' },
 ];
 
 const SERVICE_LABELS = { jellyfin: 'Jellyfin', romm: 'RomM', seerr: 'Requests' };
@@ -142,7 +144,8 @@ export default function Sidebar({ theme, onToggleTheme, open, onClose }) {
         <div className="sidebar-foot">
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           <div className="sidebar-user">
-            <span className="sidebar-user-name">{user?.username}</span>
+            <Avatar avatar={user?.avatar} name={user?.displayName || user?.username} size={32} />
+            <span className="sidebar-user-name">{user?.displayName || user?.username}</span>
             <button type="button" className="btn btn-ghost btn-small" onClick={logout}>
               Sign out
             </button>

@@ -16,6 +16,15 @@ export function validateEmail(email) {
   return null;
 }
 
+export function validateDisplayName(name) {
+  if (name === null || name === undefined || name === '') return null;
+  if (typeof name !== 'string') return 'Display name must be text.';
+  const n = name.trim();
+  if (n.length > 40) return 'Display name must be 40 characters or fewer.';
+  if (/[\u0000-\u001F\u007F]/.test(n)) return 'Display name has invalid characters.';
+  return null;
+}
+
 export function validatePassword(password) {
   if (typeof password !== 'string') return 'Password is required.';
   if (password.length < 8) return 'Password must be at least 8 characters.';
