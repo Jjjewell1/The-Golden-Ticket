@@ -207,7 +207,7 @@ export default function Home() {
                 title={g.name}
                 subtitle={g.platform}
                 badge="Play"
-                href="https://romm.jewellcore.com"
+                href="https://games.jewellcore.com"
               />
             ))}
           </div>

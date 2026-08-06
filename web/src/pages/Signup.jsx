@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { postSignup } from '../lib/api.js';
 
 const jellyfinUrl = 'https://movies.jewellcore.com';
-const rommUrl = 'https://romm.jewellcore.com';
+const rommUrl = 'https://games.jewellcore.com';
 
 function Field({ label, type = 'text', value, onChange, autoComplete, hint }) {
   return (

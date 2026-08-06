@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getRequestCount } from '../lib/api.js';
 
-const seerrUrl = 'https://seerr.jewellcore.com';
+const seerrUrl = 'https://grab.jewellcore.com';
 
 export default function Requests() {
   const [count, setCount] = useState(null);

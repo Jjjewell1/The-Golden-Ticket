@@ -3,7 +3,7 @@ import { getRecentlyAdded, gameCoverUrl } from '../lib/api.js';
 import Section from '../components/Section.jsx';
 import PosterCard from '../components/PosterCard.jsx';
 
-const rommUrl = 'https://romm.jewellcore.com';
+const rommUrl = 'https://games.jewellcore.com';
 
 export default function Games() {
   const [games, setGames] = useState(null);

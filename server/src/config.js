@@ -36,7 +36,7 @@ export const DEFAULT_APPS = [
     icon: '🕹️',
     name: 'RomM',
     tagline: 'Retro game library',
-    url: 'https://romm.jewellcore.com',
+    url: 'https://games.jewellcore.com',
     accent: '#7c4dff',
   },
   {
@@ -44,7 +44,7 @@ export const DEFAULT_APPS = [
     icon: '🎟️',
     name: 'Media Requests',
     tagline: 'Ask for a movie or show',
-    url: 'https://seerr.jewellcore.com',
+    url: 'https://grab.jewellcore.com',
     accent: '#e63946',
   },
   {
