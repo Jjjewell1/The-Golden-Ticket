@@ -14,6 +14,7 @@ import PosterRail from '../components/PosterRail.jsx';
 import Spotlight from '../components/Spotlight.jsx';
 import RandomPicks from '../components/RandomPicks.jsx';
 import DetailModal from '../components/DetailModal.jsx';
+import { useAuth } from '../lib/auth.jsx';
 import { Reveal, useCountUp, useTilt } from '../lib/useFx.jsx';
 
 const jellyfinUrl = 'https://movies.jewellcore.com';
@@ -134,6 +135,7 @@ function LiveNow({ sessions }) {
 }
 
 export default function Home() {
+  const { user } = useAuth();
   const { loading, config, data, sessions, requests, status, error } = useHomeData();
   const ticketTilt = useTilt(7);
   const [selected, setSelected] = useState(null);
@@ -229,10 +231,12 @@ export default function Home() {
           </p>
 
           <div className="hero-cta hero-anim" style={{ '--d': '360ms' }}>
-            <Link to="/get-my-ticket" className="btn btn-gold btn-lg">
-              <span className="btn-label">Get my ticket</span>
-              <span className="btn-shine" aria-hidden="true" />
-            </Link>
+            {!user && (
+              <Link to="/get-my-ticket" className="btn btn-gold btn-lg">
+                <span className="btn-label">Get my ticket</span>
+                <span className="btn-shine" aria-hidden="true" />
+              </Link>
+            )}
             <a href={jellyfinUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-lg">
               Start watching
             </a>

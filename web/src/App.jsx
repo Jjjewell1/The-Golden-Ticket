@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useTheme } from './lib/theme.jsx';
 import { AuthProvider, useAuth } from './lib/auth.jsx';
 import Background from './components/Background.jsx';
@@ -72,6 +72,9 @@ function Shell() {
           <Route path="/guide" element={<Guide />} />
           <Route path="/owner" element={<Owner />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/get-my-ticket" element={<Navigate to="/" replace />} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/forgot" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
