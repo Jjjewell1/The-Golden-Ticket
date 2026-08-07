@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { TicketLogo } from './Ticket.jsx';
-import ThemeToggle from './ThemeToggle.jsx';
 import ClockWidget from './ClockWidget.jsx';
 import WeatherWidget from './WeatherWidget.jsx';
 import Avatar from './Avatar.jsx';
@@ -47,7 +46,7 @@ function useSidebarData() {
   return state;
 }
 
-export default function Sidebar({ theme, onToggleTheme, open, onClose }) {
+export default function Sidebar({ open, onClose }) {
   const { sessions, requests, status } = useSidebarData();
   const { user, logout } = useAuth();
   const services = ['jellyfin', 'romm', 'seerr'];
@@ -142,7 +141,6 @@ export default function Sidebar({ theme, onToggleTheme, open, onClose }) {
         </div>
 
         <div className="sidebar-foot">
-          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           <div className="sidebar-user">
             <Avatar avatar={user?.avatar} name={user?.displayName || user?.username} size={32} />
             <span className="sidebar-user-name">{user?.displayName || user?.username}</span>

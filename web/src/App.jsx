@@ -28,7 +28,7 @@ export default function App() {
 
 function Shell() {
   const { user, loading } = useAuth();
-  const { theme, toggle } = useTheme();
+  useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
 
   if (loading) {
@@ -61,8 +61,8 @@ function Shell() {
   return (
     <div className="app">
       <Background />
-      <Sidebar theme={theme} onToggleTheme={toggle} open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <Topbar theme={theme} onToggleTheme={toggle} onMenu={() => setMenuOpen((o) => !o)} />
+      <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <Topbar onMenu={() => setMenuOpen((o) => !o)} />
       <main className="main">
         <Routes>
           <Route path="/" element={<Home />} />
