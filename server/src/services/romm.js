@@ -138,8 +138,22 @@ export class Romm {
   async _fetchRoms(query = {}) {
     await this.ensureSession();
     const params = new URLSearchParams();
-    for (const [k, v] of Object.entries(query)) {
-      if (v !== undefined && v !== null && v !== '') params.set(k, v);
+    const merged = { ...query };
+    // RomM needs an explicit platform_ids filter — without it every rom is
+    // reported under the first platform (e.g. all games show as "Game Boy").
+    if (merged.platform_ids == null) {
+      merged.platform_ids = await this.getPlatformIds();
+    }
+    if (Array.isArray(merged.platform_ids) && merged.platform_ids.length === 0) {
+      return { items: [], total: 0 };
+    }
+    for (const [k, v] of Object.entries(merged)) {
+      if (v === undefined || v === null || v === '') continue;
+      if (Array.isArray(v)) {
+        for (const item of v) params.append(k, String(item));
+      } else {
+        params.set(k, String(v));
+      }
     }
     const res = await this.request(`/api/roms?${params.toString()}`);
     if (res.status === 401) {
@@ -155,18 +169,37 @@ export class Romm {
     };
   }
 
+  async getPlatformIds() {
+    await this.ensureSession();
+    const res = await this.request('/api/platforms');
+    if (res.status === 401) {
+      this.sessionExpiresAt = 0;
+      await this.ensureSession();
+      return this.getPlatformIds();
+    }
+    if (!res.ok) throw new Error(`RomM: get platforms failed ${res.status}`);
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : data.platforms || data.items || [];
+    return list
+      .map((p) => p.id)
+      .filter((id) => typeof id === 'number' && id > 0);
+  }
+
   async getRecentGames(limit = 12) {
+    const platformIds = await this.getPlatformIds();
     const { items } = await this._fetchRoms({
       limit,
       order_by: 'updated_at',
       order_dir: 'desc',
       with_files: 'false',
+      platform_ids: platformIds,
     });
     return items;
   }
 
   async getFullGames() {
     const all = [];
+    const platformIds = await this.getPlatformIds();
     const pageSize = 200;
     let offset = 0;
     let total = Infinity;
@@ -177,6 +210,7 @@ export class Romm {
         order_by: 'name_sort_key',
         order_dir: 'asc',
         with_files: 'false',
+        platform_ids: platformIds,
       });
       all.push(...items);
       total = t || all.length;
