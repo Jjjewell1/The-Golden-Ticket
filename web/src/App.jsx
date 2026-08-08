@@ -9,6 +9,7 @@ import Footer from './components/Footer.jsx';
 import Home from './pages/Home.jsx';
 import Movies from './pages/Movies.jsx';
 import Games from './pages/Games.jsx';
+import Bookmarks from './pages/Bookmarks.jsx';
 import Requests from './pages/Requests.jsx';
 import Signup from './pages/Signup.jsx';
 import Login from './pages/Login.jsx';
@@ -68,6 +69,7 @@ function Shell() {
           <Route path="/" element={<Home />} />
           <Route path="/movies" element={<Movies />} />
           <Route path="/games" element={<Games />} />
+          <Route path="/bookmarks" element={<Bookmarks />} />
           <Route path="/requests" element={<Requests />} />
           <Route path="/guide" element={<Guide />} />
           <Route path="/owner" element={<Owner />} />

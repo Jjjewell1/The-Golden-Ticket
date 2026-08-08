@@ -11,12 +11,13 @@ const navLinks = [
   { to: '/', label: 'Home', icon: '🏠', end: true },
   { to: '/movies', label: 'Movies', icon: '🎬' },
   { to: '/games', label: 'Games', icon: '🕹️' },
+  { to: '/bookmarks', label: 'Bookmarks', icon: '📑' },
   { to: '/requests', label: 'Requests', icon: '🎟️' },
   { to: '/guide', label: 'Guide', icon: '🧭' },
   { to: '/profile', label: 'My profile', icon: '🎩' },
 ];
 
-const SERVICE_LABELS = { jellyfin: 'Jellyfin', romm: 'RomM', seerr: 'Requests' };
+const SERVICE_LABELS = { jellyfin: 'Jellyfin', romm: 'RomM', seerr: 'Requests', linkwarden: 'Saved links' };
 
 function useSidebarData() {
   const [state, setState] = useState({ sessions: [], requests: null, status: null });
@@ -49,7 +50,7 @@ function useSidebarData() {
 export default function Sidebar({ open, onClose }) {
   const { sessions, requests, status } = useSidebarData();
   const { user, logout } = useAuth();
-  const services = ['jellyfin', 'romm', 'seerr'];
+  const services = ['jellyfin', 'romm', 'seerr', 'linkwarden'];
   const links = [
     ...navLinks,
     ...(user?.role === 'owner' ? [{ to: '/owner', label: 'Owner', icon: '🔑' }] : []),

@@ -145,3 +145,18 @@ export function gameCoverUrl(coverPath) {
   if (!coverPath) return null;
   return `/api/img/romm?path=${encodeURIComponent(coverPath)}`;
 }
+
+export async function getLinks(q, cursor) {
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (cursor) params.set('cursor', String(cursor));
+  const qs = params.toString();
+  return getJson(`/api/links${qs ? `?${qs}` : ''}`);
+}
+
+export function linkPreviewUrl(link) {
+  if (!link || !link.hasPreview) return null;
+  const params = new URLSearchParams({ id: String(link.id) });
+  if (link.updatedAt) params.set('updatedAt', link.updatedAt);
+  return `/api/img/lw?${params.toString()}`;
+}

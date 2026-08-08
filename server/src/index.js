@@ -10,6 +10,7 @@ import { hashPassword } from './lib/crypto.js';
 import { Jellyfin } from './services/jellyfin.js';
 import { Romm } from './services/romm.js';
 import { Seerr } from './services/seerr.js';
+import { Linkwarden } from './services/linkwarden.js';
 import { apiRouter } from './routes/api.js';
 import { signupRouter } from './routes/signup.js';
 import { authRouter } from './routes/auth.js';
@@ -24,6 +25,7 @@ const store = new Store(config.dataDir).load();
 const jellyfin = new Jellyfin(config.jellyfin);
 const romm = new Romm(config.romm);
 const seerr = new Seerr(config.seerr);
+const linkwarden = new Linkwarden(config.linkwarden);
 const mailer = new Mailer(config.smtp);
 const pushover = new Pushover(config.pushover);
 
@@ -52,7 +54,7 @@ const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '100kb' }));
 
-app.use('/api', apiRouter({ jellyfin, romm, seerr, store, secret: config.sessionSecret, pushover }));
+app.use('/api', apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret: config.sessionSecret, pushover }));
 app.use('/api', signupRouter({ jellyfin, romm, store, mailer, pushover }));
 app.use('/api', authRouter({ store, jellyfin, romm, mailer, secret: config.sessionSecret, config }));
 app.use('/api', ownerRouter({ store, jellyfin, romm, mailer, secret: config.sessionSecret }));
@@ -82,6 +84,12 @@ if (fs.existsSync(webDist)) {
     console.log('[smoke] RomM OK');
   } catch (err) {
     console.log('[smoke] RomM FAIL', err.message);
+  }
+  try {
+    await linkwarden.getStatus();
+    console.log('[smoke] Linkwarden OK');
+  } catch (err) {
+    console.log('[smoke] Linkwarden FAIL', err.message);
   }
 })();
 

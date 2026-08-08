@@ -70,9 +70,9 @@ export const DEFAULT_APPS = [
   {
     group: 'Save It',
     icon: '📑',
-    name: 'Karakeep',
+    name: 'Linkwarden',
     tagline: 'Bookmarks & read-later',
-    url: 'https://karakeep.jewellcore.com',
+    url: 'https://link.jewellcore.com',
     accent: '#22c55e',
   },
 ];
@@ -146,6 +146,10 @@ export const config = {
   seerr: {
     url: (env.SEERR_URL || 'http://192.168.1.154:5055').replace(/\/+$/, ''),
     apiKey: env.SEERR_API_KEY || '',
+  },
+  linkwarden: {
+    url: (env.LINKWARDEN_URL || 'https://link.jewellcore.com').replace(/\/+$/, ''),
+    apiKey: env.LINKWARDEN_API_KEY || '',
   },
   ticketCode: env.TICKET_CODE || '',
   ownerPin: env.OWNER_PIN || '',

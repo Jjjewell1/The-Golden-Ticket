@@ -8,6 +8,7 @@ import {
   getStatus,
   posterUrl,
   gameCoverUrl,
+  linkPreviewUrl,
 } from '../lib/api.js';
 import AppCard from '../components/AppCard.jsx';
 import PosterRail from '../components/PosterRail.jsx';
@@ -19,6 +20,16 @@ import { Reveal, useCountUp, useTilt } from '../lib/useFx.jsx';
 
 const jellyfinUrl = 'https://movies.jewellcore.com';
 const rommUrl = 'https://games.jewellcore.com';
+const linkwardenUrl = 'https://link.jewellcore.com';
+
+function hostOf(url) {
+  if (!url) return null;
+  try {
+    return new URL(url).host.replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
 
 function useHomeData() {
   const [state, setState] = useState({
@@ -156,7 +167,7 @@ export default function Home() {
   const featured = movies[0] || null;
 
   const statusFor = (name) => {
-    const map = { Jellyfin: 'jellyfin', RomM: 'romm', 'Media Requests': 'seerr' };
+    const map = { Jellyfin: 'jellyfin', RomM: 'romm', 'Media Requests': 'seerr', Linkwarden: 'linkwarden' };
     const key = map[name];
     if (!key || !status) return null;
     return status.services?.[key] ?? null;
@@ -198,6 +209,17 @@ export default function Home() {
     emoji: '🎮',
     href: rommUrl,
     raw: g,
+  }));
+
+  const linkRail = (data?.links || []).slice(0, 12).map((l) => ({
+    id: l.id,
+    image: linkPreviewUrl(l),
+    title: l.name || l.url,
+    subtitle: hostOf(l.url) || l.collection?.name || 'Saved link',
+    badge: l.collection?.name || 'Saved',
+    emoji: l.icon || '📑',
+    href: l.url || linkwardenUrl,
+    raw: l,
   }));
 
   const openRail = (kind) => (it) => openDetail(kind, it.raw || it);
@@ -379,6 +401,21 @@ export default function Home() {
             </Link>
           </div>
           <PosterRail items={gameRail} size="wide" onSelect={openRail('game')} />
+        </Reveal>
+      )}
+
+      {linkRail.length > 0 && (
+        <Reveal as="section" className="section" delay={80}>
+          <div className="section-head">
+            <div>
+              <h2 className="section-title">Saved links</h2>
+              <p className="section-sub">Bookmarks you tucked away, ready when you are.</p>
+            </div>
+            <Link to="/bookmarks" className="btn btn-small btn-ghost">
+              All bookmarks →
+            </Link>
+          </div>
+          <PosterRail items={linkRail} size="wide" />
         </Reveal>
       )}
 

@@ -4,7 +4,7 @@ import { config } from '../config.js';
 import { requireAuth } from '../lib/session.js';
 import { AVATAR_PALETTE } from '../lib/avatars.js';
 
-export function apiRouter({ jellyfin, romm, seerr, store, secret, pushover }) {
+export function apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret, pushover }) {
   const router = Router();
   const protectedRouter = Router();
   const cache = createTtlCache(config.cacheTtlMs);
@@ -43,15 +43,17 @@ export function apiRouter({ jellyfin, romm, seerr, store, secret, pushover }) {
   protectedGet('/recently-added', async (req, res) => {
     try {
       const data = await cache.wrap('recently-added', async () => {
-        const [movies, series, games] = await Promise.allSettled([
+        const [movies, series, games, links] = await Promise.allSettled([
           jellyfin.getRecentlyAdded(8, ['Movie']),
           jellyfin.getRecentlyAdded(4, ['Series']),
           romm.getRecentGames(10),
+          linkwarden.getRecentLinks(10),
         ]);
         return {
           movies: movies.status === 'fulfilled' ? movies.value : [],
           series: series.status === 'fulfilled' ? series.value : [],
           games: games.status === 'fulfilled' ? games.value : [],
+          links: links.status === 'fulfilled' ? links.value : [],
         };
       });
       res.json(data);
@@ -139,17 +141,48 @@ export function apiRouter({ jellyfin, romm, seerr, store, secret, pushover }) {
     }
   });
 
+  protectedGet('/links', async (req, res) => {
+    try {
+      const q = String(req.query.q || '').trim();
+      const cursor = req.query.cursor ? Number(req.query.cursor) : undefined;
+      const key = q ? `links:search:${q}:${cursor ?? ''}` : `links:${cursor ?? ''}`;
+      const data = await cache.wrap(key, () =>
+        q ? linkwarden.searchLinks(q, { cursor }) : linkwarden.getLinks({ cursor }),
+      );
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  protectedGet('/img/lw', async (req, res) => {
+    try {
+      const id = req.query.id;
+      if (!id) return res.status(400).send('missing id');
+      const updatedAt = req.query.updatedAt || null;
+      const image = await linkwarden.fetchArchive(id, { updatedAt });
+      if (!image) return res.status(404).send('not found');
+      res.set('Content-Type', image.contentType);
+      res.set('Cache-Control', 'public, max-age=86400');
+      res.send(image.buffer);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   protectedGet('/status', async (req, res) => {
     const results = await Promise.allSettled([
       jellyfin.getSessions(),
       romm.getRecentGames(1),
       seerr.getRequestCount(),
+      linkwarden.getStatus(),
     ]);
     res.json({
       services: {
         jellyfin: results[0].status === 'fulfilled',
         romm: results[1].status === 'fulfilled',
         seerr: results[2].status === 'fulfilled',
+        linkwarden: results[3].status === 'fulfilled',
       },
       checkedAt: new Date().toISOString(),
     });
