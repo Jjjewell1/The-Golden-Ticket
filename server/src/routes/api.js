@@ -134,8 +134,8 @@ export function apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret, pu
 
   protectedGet('/requests', async (req, res) => {
     try {
-      const count = await cache.wrap('requests', () => seerr.getRequestCount(), 60_000);
-      res.json({ count });
+      const data = await cache.wrap('requests', () => seerr.getRequests(15), 60_000);
+      res.json(data);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }

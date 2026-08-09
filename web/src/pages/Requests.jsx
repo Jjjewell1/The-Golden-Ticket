@@ -1,17 +1,42 @@
 import { useEffect, useState } from 'react';
-import { getRequestCount } from '../lib/api.js';
+import { getRequests } from '../lib/api.js';
 
 const seerrUrl = 'https://grab.jewellcore.com';
 
+const TYPE_ICON = { movie: '🎬', tv: '📺', series: '📺' };
+
+const posterUrl = (path) => (path ? `https://image.tmdb.org/t/p/w92${path}` : null);
+
+function fmtDate(d) {
+  if (!d) return '';
+  const date = new Date(d);
+  if (isNaN(date)) return '';
+  const diff = Date.now() - date.getTime();
+  const day = 86400000;
+  if (diff >= 0 && diff < day) return 'today';
+  if (diff >= 0 && diff < 2 * day) return 'yesterday';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export default function Requests() {
-  const [count, setCount] = useState(null);
-  const [error, setError] = useState(null);
+  const [state, setState] = useState({ loading: true, error: null, count: null, requests: [] });
 
   useEffect(() => {
-    getRequestCount()
-      .then((d) => setCount(d.count))
-      .catch((e) => setError(e.message));
+    let alive = true;
+    getRequests()
+      .then((d) => {
+        if (!alive) return;
+        setState({ loading: false, error: null, count: d.count, requests: d.requests || [] });
+      })
+      .catch((e) => {
+        if (alive) setState({ loading: false, error: e.message, count: null, requests: [] });
+      });
+    return () => {
+      alive = false;
+    };
   }, []);
+
+  const { loading, error, count, requests } = state;
 
   return (
     <div className="page">
@@ -39,6 +64,56 @@ export default function Requests() {
           Go to requests
         </a>
       </div>
+
+      <section className="mgmt-section">
+        <h2 className="mgmt-title">📦 Where things stand</h2>
+        <p className="mgmt-hint">
+          Track your request from &quot;awaiting approval&quot; all the way to &quot;ready to watch&quot;. The status
+          refreshes every minute or so.
+        </p>
+
+        {error ? null : loading ? (
+          <p className="sidebar-widget-empty">Checking the queue…</p>
+        ) : requests.length === 0 ? (
+          <p className="sidebar-widget-empty">
+            No requests yet — go make the first one!
+          </p>
+        ) : (
+          <div className="request-list">
+            {requests.map((r) => (
+              <div key={r.id} className="request-row">
+                {r.posterPath ? (
+                  <img
+                    className="request-row-poster"
+                    src={posterUrl(r.posterPath)}
+                    alt=""
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="request-row-icon" aria-hidden="true">
+                    {TYPE_ICON[r.type] || '🎬'}
+                  </div>
+                )}
+                <div className="request-row-main">
+                  <strong className="request-row-title">
+                    {r.title}
+                    {r.year ? <span className="request-row-year">{r.year}</span> : null}
+                  </strong>
+                  <span className="request-row-meta">
+                    {r.requestedBy}
+                    {r.requestedAt ? ` · requested ${fmtDate(r.requestedAt)}` : ''}
+                    {r.is4k ? ' · 4K' : ''}
+                  </span>
+                </div>
+                <span className="request-status" data-tone={r.status?.key}>
+                  <span className="request-status-dot" />
+                  {r.status?.label || 'Processing'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

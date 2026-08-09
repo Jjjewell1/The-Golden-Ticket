@@ -60,6 +60,10 @@ export async function getRequestCount() {
   return getJson('/api/requests');
 }
 
+export async function getRequests() {
+  return getJson('/api/requests');
+}
+
 export async function getStatus() {
   return getJson('/api/status');
 }

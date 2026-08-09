@@ -2683,6 +2683,163 @@ button.rail-card-btn:focus-visible {
   color: transparent;
 }
 
+.request-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.request-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+.request-row-icon {
+  font-size: 24px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.request-row-poster {
+  width: 46px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.request-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.request-row-title {
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.request-row-year {
+  margin-left: 8px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.request-row-meta {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.request-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(148, 163, 184, 0.14);
+  color: var(--text);
+}
+
+.request-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.16);
+}
+
+.request-status[data-tone='available'] {
+  background: rgba(34, 197, 94, 0.14);
+  color: #16a34a;
+}
+
+[data-theme='dark'] .request-status[data-tone='available'] {
+  color: #4ade80;
+}
+
+.request-status[data-tone='available'] .request-status-dot {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+.request-status[data-tone='partial'] {
+  background: rgba(34, 197, 94, 0.14);
+  color: #16a34a;
+}
+
+[data-theme='dark'] .request-status[data-tone='partial'] {
+  color: #4ade80;
+}
+
+.request-status[data-tone='partial'] .request-status-dot {
+  background: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.18);
+}
+
+.request-status[data-tone='downloading'] {
+  background: rgba(56, 189, 248, 0.14);
+  color: #0284c7;
+}
+
+[data-theme='dark'] .request-status[data-tone='downloading'] {
+  color: #38bdf8;
+}
+
+.request-status[data-tone='downloading'] .request-status-dot {
+  background: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.request-status[data-tone='approved'] {
+  background: rgba(245, 158, 11, 0.14);
+  color: #d97706;
+}
+
+[data-theme='dark'] .request-status[data-tone='approved'] {
+  color: #fbbf24;
+}
+
+.request-status[data-tone='approved'] .request-status-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+
+.request-status[data-tone='pending'] .request-status-dot {
+  background: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.16);
+}
+
+.request-status[data-tone='declined'],
+.request-status[data-tone='failed'] {
+  background: rgba(239, 68, 68, 0.14);
+  color: #dc2626;
+}
+
+[data-theme='dark'] .request-status[data-tone='declined'],
+[data-theme='dark'] .request-status[data-tone='failed'] {
+  color: #f87171;
+}
+
+.request-status[data-tone='declined'] .request-status-dot,
+.request-status[data-tone='failed'] .request-status-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+}
+
 /* ---------- signup ---------- */
 
 .signup-form {

@@ -31,7 +31,7 @@ export default function WeatherWidget() {
         if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error('geo');
         const city = geo.city || geo.region || geo.country_name || '';
         const wRes = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code`,
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&temperature_unit=fahrenheit&wind_speed_unit=mph`,
         );
         if (!wRes.ok) throw new Error('weather');
         const w = await wRes.json();
@@ -70,13 +70,13 @@ export default function WeatherWidget() {
             {WMO[data.code] || '🌡️'}
           </span>
           <div className="weather-main">
-            <span className="weather-temp">{data.temp}°</span>
+            <span className="weather-temp">{data.temp}°F</span>
             <span className="weather-label">{LABELS[data.code] || 'Mixed'}</span>
           </div>
           <div className="weather-meta">
             <span>{data.city}</span>
             <span>{data.humidity}% humidity</span>
-            {data.wind > 0 && <span>{data.wind} km/h wind</span>}
+            {data.wind > 0 && <span>{data.wind} mph wind</span>}
           </div>
         </div>
       )}
