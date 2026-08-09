@@ -44,15 +44,21 @@ function useHomeData() {
 
   useEffect(() => {
     let alive = true;
-    Promise.all([getConfig(), getRecentlyAdded(), getSessions(), getRequestCount(), getStatus()])
-      .then(([config, data, sessions, requests, status]) => {
+    Promise.allSettled([getConfig(), getRecentlyAdded(), getSessions(), getRequestCount(), getStatus()]).then(
+      ([configR, dataR, sessionsR, requestsR, statusR]) => {
         if (!alive) return;
-        setState({ loading: false, config, data, sessions, requests: requests.count, status, error: null });
-      })
-      .catch((err) => {
-        if (!alive) return;
-        setState({ loading: false, config: null, data: null, sessions: [], requests: null, status: null, error: err.message });
-      });
+        const ok = (r) => r.status === 'fulfilled';
+        setState({
+          loading: false,
+          config: ok(configR) ? configR.value : null,
+          data: ok(dataR) ? dataR.value : null,
+          sessions: ok(sessionsR) ? sessionsR.value : [],
+          requests: ok(requestsR) ? requestsR.value.count : null,
+          status: ok(statusR) ? statusR.value : null,
+          error: ok(configR) && ok(dataR) && ok(requestsR) && ok(statusR) ? null : 'some services are unreachable',
+        });
+      },
+    );
     const t = setInterval(async () => {
       try {
         const s = await getSessions();

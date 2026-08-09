@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '../lib/http.js';
+
 export class Seerr {
   constructor({ url, apiKey }) {
     this.url = url;
@@ -9,7 +11,7 @@ export class Seerr {
     for (const [k, v] of Object.entries(query)) {
       if (v !== undefined && v !== null) url.searchParams.set(k, v);
     }
-    const res = await fetch(url.toString(), {
+    const res = await fetchWithTimeout(url.toString(), {
       headers: { 'X-Api-Key': this.apiKey },
     });
     if (!res.ok) throw new Error(`Seerr ${path} failed: ${res.status}`);

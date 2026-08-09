@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '../lib/http.js';
+
 export class Romm {
   constructor({ url, adminUser, adminPassword }) {
     this.url = url;
@@ -38,7 +40,7 @@ export class Romm {
     }
     if (body) headers['Content-Type'] = 'application/json';
 
-    const res = await fetch(url.toString(), {
+    const res = await fetchWithTimeout(url.toString(), {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
@@ -289,7 +291,7 @@ export class Romm {
 
   async fetchRemoteImage(url) {
     try {
-      const res = await fetch(url);
+      const res = await fetchWithTimeout(url, {}, 10000);
       if (!res.ok) return null;
       const buf = Buffer.from(await res.arrayBuffer());
       return { buffer: buf, contentType: res.headers.get('content-type') || 'image/png' };

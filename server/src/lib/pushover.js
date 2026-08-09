@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from './http.js';
+
 export class Pushover {
   constructor({ token, user }) {
     this.token = token;
@@ -23,11 +25,11 @@ export class Pushover {
     if (url) body.set('url', url);
     if (urlTitle) body.set('url_title', urlTitle);
     try {
-      const res = await fetch('https://api.pushover.net/1/messages.json', {
+      const res = await fetchWithTimeout('https://api.pushover.net/1/messages.json', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: body.toString(),
-      });
+      }, 8000);
       if (!res.ok) {
         const text = await res.text().catch(() => '');
         console.error('Pushover: send failed', res.status, text.slice(0, 200));

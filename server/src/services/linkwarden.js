@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '../lib/http.js';
+
 export class Linkwarden {
   constructor({ url, apiKey }) {
     this.url = url;
@@ -10,7 +12,7 @@ export class Linkwarden {
     for (const [k, v] of Object.entries(query)) {
       if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
     }
-    const res = await fetch(url.toString(), {
+    const res = await fetchWithTimeout(url.toString(), {
       headers: { Authorization: `Bearer ${this.apiKey}` },
     });
     if (!res.ok) throw new Error(`Linkwarden ${path} failed: ${res.status}`);

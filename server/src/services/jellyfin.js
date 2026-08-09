@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '../lib/http.js';
+
 export class Jellyfin {
   constructor({ url, apiKey, userName = '' }) {
     this.url = url;
@@ -15,7 +17,7 @@ export class Jellyfin {
     if (this.apiKey) headers.Authorization = `MediaBrowser Token="${this.apiKey}"`;
     if (body) headers['Content-Type'] = 'application/json';
 
-    const res = await fetch(url.toString(), {
+    const res = await fetchWithTimeout(url.toString(), {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
@@ -218,9 +220,9 @@ export class Jellyfin {
     url.searchParams.set('maxWidth', String(maxWidth));
     url.searchParams.set('quality', '90');
     if (imageTag) url.searchParams.set('tag', imageTag);
-    const res = await fetch(url.toString(), {
+    const res = await fetchWithTimeout(url.toString(), {
       headers: this.apiKey ? { Authorization: `MediaBrowser Token="${this.apiKey}"` } : {},
-    });
+    }, 10000);
     if (!res.ok) return null;
     const buf = Buffer.from(await res.arrayBuffer());
     return {
