@@ -456,6 +456,35 @@ a {
   color: var(--muted);
 }
 
+.sidebar-queue-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-queue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text);
+  min-width: 0;
+}
+
+.sidebar-queue-item-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-queue-item .request-status {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  font-size: 11px;
+}
+
 .sidebar-status {
   display: flex;
   flex-direction: column;

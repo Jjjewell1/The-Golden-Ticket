@@ -291,7 +291,7 @@ export default function Home() {
             <Stat value={movies.length} label="Movies in" />
             <Stat value={series.length} label="Shows in" />
             <Stat value={games.length} label="Games in" />
-            <Stat value={requests ?? 0} label="In the queue" />
+            <Stat value={requests ?? 0} label="Downloading" />
           </div>
 
           {!customBanner && (
@@ -439,7 +439,7 @@ export default function Home() {
                 <span className="request-count">
                   {' '}
                   <strong className="request-count-big">{requests}</strong>{' '}
-                  {requests === 1 ? 'request' : 'requests'} in the queue right now.
+                  {requests === 1 ? 'request is' : 'requests are'} downloading right now.
                 </span>
               )}
             </p>

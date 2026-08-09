@@ -20,7 +20,7 @@ const navLinks = [
 const SERVICE_LABELS = { jellyfin: 'Jellyfin', romm: 'RomM', seerr: 'Requests', linkwarden: 'Saved links' };
 
 function useSidebarData() {
-  const [state, setState] = useState({ sessions: [], requests: null, status: null });
+  const [state, setState] = useState({ sessions: [], requests: null, recentRequests: [], status: null });
 
   useEffect(() => {
     let alive = true;
@@ -31,6 +31,7 @@ function useSidebarData() {
           setState({
             sessions: s.status === 'fulfilled' ? s.value : [],
             requests: r.status === 'fulfilled' ? r.value.count : null,
+            recentRequests: r.status === 'fulfilled' ? r.value.requests || [] : [],
             status: st.status === 'fulfilled' ? st.value : null,
           });
         }
@@ -48,7 +49,7 @@ function useSidebarData() {
 }
 
 export default function Sidebar({ open, onClose }) {
-  const { sessions, requests, status } = useSidebarData();
+  const { sessions, requests, recentRequests, status } = useSidebarData();
   const { user, logout } = useAuth();
   const services = ['jellyfin', 'romm', 'seerr', 'linkwarden'];
   const links = [
@@ -119,9 +120,24 @@ export default function Sidebar({ open, onClose }) {
             <div className="sidebar-queue">
               <span className="sidebar-queue-count">{requests ?? '…'}</span>
               <span className="sidebar-queue-label">
-                {requests === 1 ? 'request waiting' : 'requests waiting'}
+                {requests === 1 ? 'request downloading' : 'requests downloading'}
               </span>
             </div>
+            {recentRequests.length > 0 && (
+              <div className="sidebar-queue-list">
+                {recentRequests.slice(0, 5).map((r) => (
+                  <div key={r.id} className="sidebar-queue-item">
+                    <span className="sidebar-queue-item-title" title={r.title}>
+                      {r.title}
+                    </span>
+                    <span className="request-status" data-tone={r.status?.key}>
+                      <span className="request-status-dot" />
+                      {r.status?.label || 'Processing'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="sidebar-widget">

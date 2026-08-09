@@ -57,7 +57,7 @@ export default function Requests() {
         {count !== null && (
           <p className="request-count">
             <span className="request-count-big">{count}</span> {count === 1 ? 'request is' : 'requests are'}{' '}
-            in the queue right now.
+            downloading right now.
           </p>
         )}
         <a href={seerrUrl} target="_blank" rel="noreferrer" className="btn btn-gold btn-lg">
@@ -66,18 +66,15 @@ export default function Requests() {
       </div>
 
       <section className="mgmt-section">
-        <h2 className="mgmt-title">📦 Where things stand</h2>
+        <h2 className="mgmt-title">📦 Recently requested</h2>
         <p className="mgmt-hint">
-          Track your request from &quot;awaiting approval&quot; all the way to &quot;ready to watch&quot;. The status
-          refreshes every minute or so.
+          Requests made in the last 24 hours, newest first. The status refreshes every minute or so.
         </p>
 
         {error ? null : loading ? (
           <p className="sidebar-widget-empty">Checking the queue…</p>
         ) : requests.length === 0 ? (
-          <p className="sidebar-widget-empty">
-            No requests yet — go make the first one!
-          </p>
+          <p className="sidebar-widget-empty">No requests in the last 24 hours.</p>
         ) : (
           <div className="request-list">
             {requests.map((r) => (

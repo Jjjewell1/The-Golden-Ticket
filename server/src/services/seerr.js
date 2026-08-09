@@ -24,8 +24,8 @@ export class Seerr {
   }
 
   async getRequests(take = 15, skip = 0) {
-    // Pull every request (paginated) so the active count is accurate even when
-    // there are more requests than the display list uses. Only the first
+    // Pull every request (paginated) so the downloading count is accurate even
+    // when there are more requests than the display list uses. Only the recent
     // `take` items get the TMDB enrichment for display.
     const all = [];
     const pageSize = 50;
@@ -37,19 +37,28 @@ export class Seerr {
       if (results.length === 0 || all.length >= total) break;
     }
 
-    // The list keeps the full history (with statuses), but the count should
-    // only reflect requests that still need something to happen — completed,
-    // declined, and failed requests are not "waiting" anymore.
-    const activeCount = all.filter((r) => {
+    const statusOf = (r) => {
       const media = r.media || {};
       const mediaStatus = r.is4k && media.status4k ? media.status4k : media.status;
-      const key = deriveStatus(r.status, mediaStatus).key;
-      return key !== 'available' && key !== 'declined' && key !== 'failed';
-    }).length;
+      return deriveStatus(r.status, mediaStatus);
+    };
 
-    const results = all.slice(skip, skip + take);
+    // The queue number reflects only what is actively downloading — completed,
+    // declined, failed, approved-but-idle, and pending requests don't count.
+    const downloadingCount = all.filter((r) => statusOf(r).key === 'downloading').length;
+
+    // The list under the count shows the most recent requests (last 24 hours).
+    const since = Date.now() - 24 * 60 * 60 * 1000;
+    const recent = all
+      .filter((r) => {
+        const t = r.createdAt ? new Date(r.createdAt).getTime() : 0;
+        return t >= since;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(skip, skip + take);
+
     const requests = await Promise.all(
-      results.map(async (r) => {
+      recent.map(async (r) => {
         const media = r.media || {};
         const is4k = !!r.is4k;
         const mediaStatus = is4k && media.status4k ? media.status4k : media.status;
@@ -87,12 +96,12 @@ export class Seerr {
           requestedAt: r.createdAt || null,
           updatedAt: r.updatedAt || null,
           seasonCount: r.seasonCount ?? (Array.isArray(r.seasons) ? r.seasons.length : 0),
-          status: deriveStatus(r.status, mediaStatus),
+          status: statusOf(r),
         };
       }),
     );
 
-    return { count: activeCount, requests };
+    return { count: downloadingCount, requests };
   }
 
   async getStatus() {
