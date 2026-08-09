@@ -24,10 +24,30 @@ export class Seerr {
   }
 
   async getRequests(take = 15, skip = 0) {
-    const data = await this.request('/api/v1/request', { take, skip });
-    const count = data?.pageInfo?.results ?? 0;
-    const results = data?.results || [];
+    // Pull every request (paginated) so the active count is accurate even when
+    // there are more requests than the display list uses. Only the first
+    // `take` items get the TMDB enrichment for display.
+    const all = [];
+    const pageSize = 50;
+    for (let offset = 0; ; offset += pageSize) {
+      const data = await this.request('/api/v1/request', { take: pageSize, skip: offset });
+      const total = data?.pageInfo?.results ?? all.length;
+      const results = data?.results || [];
+      all.push(...results);
+      if (results.length === 0 || all.length >= total) break;
+    }
 
+    // The list keeps the full history (with statuses), but the count should
+    // only reflect requests that still need something to happen — completed,
+    // declined, and failed requests are not "waiting" anymore.
+    const activeCount = all.filter((r) => {
+      const media = r.media || {};
+      const mediaStatus = r.is4k && media.status4k ? media.status4k : media.status;
+      const key = deriveStatus(r.status, mediaStatus).key;
+      return key !== 'available' && key !== 'declined' && key !== 'failed';
+    }).length;
+
+    const results = all.slice(skip, skip + take);
     const requests = await Promise.all(
       results.map(async (r) => {
         const media = r.media || {};
@@ -72,7 +92,7 @@ export class Seerr {
       }),
     );
 
-    return { count, requests };
+    return { count: activeCount, requests };
   }
 
   async getStatus() {
