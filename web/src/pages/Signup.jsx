@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { postSignup } from '../lib/api.js';
+import NotifyCard from '../components/NotifyCard.jsx';
 
 const jellyfinUrl = 'https://movies.jewellcore.com';
 const rommUrl = 'https://games.jewellcore.com';
@@ -62,6 +63,7 @@ export default function Signup() {
             <div className="signup-success-note">
               Keep an eye on your inbox — we&apos;ll email you the moment the owner decides.
             </div>
+            <NotifyCard />
             <div className="auth-links">
               <Link to="/">Back to sign in</Link>
             </div>
@@ -105,6 +107,8 @@ export default function Signup() {
           <p className="signup-success-note">
             Don&apos;t forget your password — we can&apos;t see it, so if you forget, use the sign-in page to reset it.
           </p>
+
+          <NotifyCard />
 
           <div className="auth-links">
             <Link to="/">Sign in now</Link>

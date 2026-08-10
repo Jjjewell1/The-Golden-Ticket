@@ -4,7 +4,7 @@ import { config } from '../config.js';
 import { requireAuth } from '../lib/session.js';
 import { AVATAR_PALETTE } from '../lib/avatars.js';
 
-export function apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret, pushover }) {
+export function apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret, pushover, ntfy }) {
   const router = Router();
   const protectedRouter = Router();
   const cache = createTtlCache(config.cacheTtlMs);
@@ -26,6 +26,7 @@ export function apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret, pu
       banner: store.getSetting('banner', null),
       ownerPinSet: !!config.ownerPin,
       avatars: AVATAR_PALETTE,
+      notify: ntfy?.enabled ? { subscribeUrl: ntfy.subscribeUrl } : null,
     });
   });
 
@@ -42,7 +43,19 @@ export function apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret, pu
 
   protectedGet('/recently-added', async (req, res) => {
     try {
-      const data = await cache.wrap('recently-added', async () => {
+      const type = String(req.query.type || 'all');
+      const limit = Number(req.query.limit) || 0;
+      const data = await cache.wrap(`recently-added:${type}:${limit}`, async () => {
+        if (type === 'movie' || type === 'series') {
+          const n = limit > 0 ? limit : 30;
+          const items = await jellyfin.getRecentlyAdded(n, [type === 'movie' ? 'Movie' : 'Series']);
+          return { type, items: items.map((i) => ({ ...i, kind: type })) };
+        }
+        if (type === 'game') {
+          const n = limit > 0 ? limit : 30;
+          const items = await romm.getRecentGames(n);
+          return { type, items: items.map((g) => ({ ...g, kind: 'game' })) };
+        }
         const [movies, series, games, links] = await Promise.allSettled([
           jellyfin.getRecentlyAdded(8, ['Movie']),
           jellyfin.getRecentlyAdded(4, ['Series']),
@@ -134,7 +147,7 @@ export function apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret, pu
 
   protectedGet('/requests', async (req, res) => {
     try {
-      const data = await cache.wrap('requests', () => seerr.getRequests(15), 60_000);
+      const data = await cache.wrap('requests', () => seerr.getRequests(10), 60_000);
       res.json(data);
     } catch (err) {
       res.status(500).json({ error: err.message });

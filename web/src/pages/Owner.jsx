@@ -1,446 +1,291 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../lib/auth.jsx';
+import { Link } from 'react-router-dom';
 import {
-  getConfig,
   getOwnerRequests,
   getOwnerUsers,
   getOwnerSettings,
-  postOwnerAddUser,
+  patchOwnerSettings,
   postOwnerDecision,
   postOwnerUserAction,
-  patchOwnerUser,
-  patchOwnerSettings,
+  postOwnerTestNotify,
 } from '../lib/api.js';
-import AppCard from '../components/AppCard.jsx';
 import Avatar from '../components/Avatar.jsx';
-import AvatarPicker from '../components/AvatarPicker.jsx';
-import BannerPicker from '../components/BannerPicker.jsx';
+import { Reveal } from '../lib/useFx.jsx';
 
-function fmt(d) {
-  if (!d) return '';
-  const date = new Date(d);
-  return isNaN(date) ? '' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+function fmt(t) {
+  return new Date(t).toLocaleDateString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-const newAnnouncement = () => ({
-  id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-  title: '',
-  body: '',
-  enabled: true,
-});
-
 export default function Owner() {
-  const { user } = useAuth();
-  const [ownerApps, setOwnerApps] = useState([]);
-  const [avatars, setAvatars] = useState([]);
-  const [requests, setRequests] = useState([]);
-  const [members, setMembers] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [note, setNote] = useState({});
-  const [addForm, setAddForm] = useState({ username: '', email: '', password: '' });
-  const [editing, setEditing] = useState(null);
-  const [bannerForm, setBannerForm] = useState({ image: '', tagline: '' });
-  const [announcements, setAnnouncements] = useState([]);
-  const [customBusy, setCustomBusy] = useState(false);
-  const [customSaved, setCustomSaved] = useState(false);
-  const [customError, setCustomError] = useState('');
-
-  const isOwner = user?.role === 'owner';
+  const [tab, setTab] = useState('requests');
+  const [requests, setRequests] = useState(null);
+  const [users, setUsers] = useState(null);
+  const [settings, setSettings] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const [notify, setNotify] = useState({ busy: false, sent: false, error: '' });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    getConfig()
-      .then((c) => {
-        setOwnerApps(c.ownerApps || []);
-        setAvatars(c.avatars || []);
-      })
-      .catch(() => {});
+    let alive = true;
+    Promise.allSettled([getOwnerRequests(), getOwnerUsers(), getOwnerSettings()]).then(([r, u, s]) => {
+      if (!alive) return;
+      if (r.status === 'fulfilled') setRequests(r.value.requests || []);
+      if (u.status === 'fulfilled') setUsers(u.value.users || []);
+      if (s.status === 'fulfilled') setSettings(s.value);
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  const reload = () => {
-    if (isOwner) {
-      Promise.allSettled([getOwnerRequests(), getOwnerUsers(), getOwnerSettings()]).then(([r, u, s]) => {
-        if (r.status === 'fulfilled') setRequests(r.value.requests || []);
-        if (u.status === 'fulfilled') setMembers(u.value.users || []);
-        if (s.status === 'fulfilled') {
-          setBannerForm(s.value.banner || { image: '', tagline: '' });
-          setAnnouncements(Array.isArray(s.value.announcements) ? s.value.announcements : []);
-        }
-      });
+  const decide = async (req, action) => {
+    const verb = action === 'approve' ? 'approve' : 'deny';
+    if (!window.confirm(`Are you sure you want to ${verb} ${req.username}?`)) return;
+    setBusyId(req.id);
+    const res = await postOwnerDecision(req.id, { action });
+    setBusyId(null);
+    if (!res.ok) {
+      window.alert(res.data.error || 'Could not decide that request.');
+      return;
+    }
+    const fresh = await getOwnerRequests();
+    setRequests(fresh.requests || []);
+  };
+
+  const toggleAnnouncement = async (a) => {
+    const list = (settings?.announcements || []).map((x) =>
+      x.id === a.id ? { ...x, enabled: !x.enabled } : x,
+    );
+    setSaving(true);
+    const res = await patchOwnerSettings({ announcements: list });
+    setSaving(false);
+    if (res.ok) setSettings({ ...settings, announcements: res.data.announcements });
+  };
+
+  const sendTestNotification = async () => {
+    setNotify({ busy: true, sent: false, error: '' });
+    const res = await postOwnerTestNotify();
+    if (res.ok) {
+      setNotify({ busy: false, sent: true, error: '' });
+    } else {
+      setNotify({ busy: false, sent: false, error: res.data.error || 'Could not send the test notification.' });
     }
   };
 
-  useEffect(() => {
-    reload();
-  }, [isOwner]);
-
-  async function decide(request, action) {
-    setBusy(true);
-    setError('');
-    const { ok, data } = await postOwnerDecision(request.id, { action, note: note[request.id] || '' });
-    setBusy(false);
-    if (!ok) {
-      setError(data.error || 'Something went wrong.');
+  const userAction = async (u, action, label) => {
+    if (!window.confirm(`${label} ${u.username}?`)) return;
+    setBusyId(u.id);
+    const res = await postOwnerUserAction(u.id, action);
+    setBusyId(null);
+    if (!res.ok) {
+      window.alert(res.data.error || 'That did not work.');
       return;
     }
-    reload();
-  }
+    const fresh = await getOwnerUsers();
+    setUsers(fresh.users || []);
+  };
 
-  async function userAction(member, action) {
-    setBusy(true);
-    setError('');
-    const { ok, data } = await postOwnerUserAction(member.id, action);
-    setBusy(false);
-    if (!ok) {
-      setError(data.error || 'Something went wrong.');
-      return;
-    }
-    reload();
-  }
-
-  function openEdit(member) {
-    setError('');
-    setEditing({
-      id: member.id,
-      displayName: member.displayName || '',
-      avatar: member.avatar || '',
-      email: member.email || '',
-      password: '',
-    });
-  }
-
-  async function saveEdit(e) {
-    e.preventDefault();
-    if (!editing) return;
-    setBusy(true);
-    setError('');
-    const payload = {
-      displayName: editing.displayName.trim(),
-      avatar: editing.avatar,
-    };
-    if (editing.email && editing.email !== members.find((m) => m.id === editing.id)?.email) {
-      payload.email = editing.email;
-    }
-    if (editing.password) payload.password = editing.password;
-    const { ok, data } = await patchOwnerUser(editing.id, payload);
-    setBusy(false);
-    if (!ok) {
-      setError(data.error || 'Something went wrong.');
-      return;
-    }
-    setEditing(null);
-    reload();
-  }
-
-  async function addMember(e) {
-    e.preventDefault();
-    setBusy(true);
-    setError('');
-    const { ok, data } = await postOwnerAddUser(addForm);
-    setBusy(false);
-    if (!ok) {
-      setError(data.error || 'Something went wrong.');
-      return;
-    }
-    setAddForm({ username: '', email: '', password: '' });
-    reload();
-  }
-
-  async function saveCustomization(e) {
-    e.preventDefault();
-    setCustomBusy(true);
-    setCustomSaved(false);
-    setCustomError('');
-    const { ok, data } = await patchOwnerSettings({
-      banner: { image: bannerForm.image, tagline: bannerForm.tagline },
-      announcements,
-    });
-    setCustomBusy(false);
-    if (!ok) {
-      setCustomError(data.error || 'Something went wrong.');
-      return;
-    }
-    setBannerForm(data.banner || { image: '', tagline: '' });
-    setAnnouncements(data.announcements || []);
-    setCustomSaved(true);
-  }
-
-  if (!isOwner) {
-    return (
-      <div className="page">
-        <div className="owner-gate">
-          <div className="owner-gate-icon" aria-hidden="true">🔒</div>
-          <h1 className="page-title">Owner&apos;s only</h1>
-          <p className="page-sub">This section is for the keeper of the server.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const pending = requests.filter((r) => r.status === 'pending');
+  const pendingCount = (requests || []).filter((r) => r.status === 'pending').length;
+  const statusTag = (status) =>
+    status === 'pending' ? 'waiting on you' : status === 'denied' ? 'denied' : 'approved';
 
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title">Owner&apos;s corner</h1>
-        <p className="page-sub">Approve new tickets, manage members, and keep the lights on.</p>
+        <h1 className="page-title">Owner panel</h1>
+        <p className="page-sub">Requests, members and site settings.</p>
       </div>
 
-      {error && <div className="banner banner-error">{error}</div>}
+      <div className="tab-row">
+        <button type="button" className={`tab${tab === 'requests' ? ' active' : ''}`} onClick={() => setTab('requests')}>
+          Requests {pendingCount > 0 ? `(${pendingCount})` : ''}
+        </button>
+        <button type="button" className={`tab${tab === 'users' ? ' active' : ''}`} onClick={() => setTab('users')}>
+          Members
+        </button>
+        <button type="button" className={`tab${tab === 'settings' ? ' active' : ''}`} onClick={() => setTab('settings')}>
+          Settings
+        </button>
+      </div>
 
-      {pending.length > 0 ? (
-        <section className="mgmt-section">
-          <h2 className="mgmt-title">🎟️ Pending requests</h2>
-          <div className="mgmt-list">
-            {pending.map((r) => (
-              <div key={r.id} className="mgmt-row">
-                <div className="mgmt-main">
-                  <strong>{r.username}</strong>
-                  <span className="mgmt-sub">{r.email} · requested {fmt(r.requestedAt)}</span>
-                </div>
-                <div className="mgmt-side">
-                  <input
-                    className="mgmt-note"
-                    placeholder="Optional note"
-                    value={note[r.id] || ''}
-                    onChange={(e) => setNote((n) => ({ ...n, [r.id]: e.target.value }))}
-                  />
-                  <button className="btn btn-gold btn-small" disabled={busy} onClick={() => decide(r, 'approve')}>
-                    Approve
-                  </button>
-                  <button className="btn btn-danger btn-small" disabled={busy} onClick={() => decide(r, 'deny')}>
-                    Deny
-                  </button>
-                </div>
+      {tab === 'requests' && (
+        <Reveal>
+          <div className="mgmt-section">
+            {!requests ? (
+              <div className="loading">
+                <div className="loading-ticket">🎟️</div>
+                <p>Pulling up the queue…</p>
               </div>
-            ))}
+            ) : requests.length === 0 ? (
+              <p className="mgmt-hint">No requests right now — the queue is clear.</p>
+            ) : (
+              <div className="mgmt-list">
+                {requests.map((req) => (
+                  <div key={req.id} className="mgmt-card">
+                    <div className="mgmt-row">
+                      <div className="mgmt-main mgmt-main-user">
+                        <strong>
+                          {req.username}
+                          <span className={`mgmt-tag${req.status !== 'approved' ? ' mgmt-tag-off' : ''}`}>
+                            {statusTag(req.status)}
+                          </span>
+                        </strong>
+                        <span className="mgmt-sub">
+                          {req.email}
+                          {req.requestedAt ? ` · requested ${fmt(req.requestedAt)}` : ''}
+                        </span>
+                      </div>
+                      {req.status === 'pending' && (
+                        <div className="mgmt-side">
+                          <button
+                            type="button"
+                            className="btn btn-small btn-ok"
+                            disabled={busyId === req.id}
+                            onClick={() => decide(req, 'approve')}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-small btn-danger"
+                            disabled={busyId === req.id}
+                            onClick={() => decide(req, 'deny')}
+                          >
+                            Deny
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </section>
-      ) : null}
+        </Reveal>
+      )}
 
-      <section className="mgmt-section">
-        <h2 className="mgmt-title">👥 Members</h2>
-        <div className="mgmt-list">
-          {members.map((m) => (
-            <div key={m.id} className="mgmt-card">
-              <div className="mgmt-row">
-                <div className="mgmt-main mgmt-main-user">
-                  <strong>
-                    <Avatar
-                      avatar={m.avatar}
-                      name={m.displayName || m.username}
-                      size={36}
-                      className="mgmt-avatar"
-                    />
-                    {m.displayName || m.username}
-                    {m.username !== m.displayName ? <span className="mgmt-user-handle">@{m.username}</span> : null}
-                    {m.role === 'owner' ? <span className="mgmt-tag">owner</span> : null}
-                    {m.status !== 'active' ? <span className="mgmt-tag mgmt-tag-off">disabled</span> : null}
-                  </strong>
-                  <span className="mgmt-sub">{m.email || 'no email'}</span>
-                </div>
-                <div className="mgmt-side">
-                  {m.role !== 'owner' ? (
-                    <>
-                      <button className="btn btn-ghost btn-small" disabled={busy} onClick={() => userAction(m, m.status === 'active' ? 'disable' : 'enable')}>
-                        {m.status === 'active' ? 'Disable' : 'Enable'}
-                      </button>
-                      <button className="btn btn-ghost btn-small" disabled={busy} onClick={() => userAction(m, 'reset-password')}>
-                        Reset password
-                      </button>
-                    </>
-                  ) : null}
-                  <button className="btn btn-ghost btn-small" disabled={busy} onClick={() => openEdit(m)}>
-                    Edit
-                  </button>
-                </div>
+      {tab === 'users' && (
+        <Reveal>
+          <div className="mgmt-section">
+            {!users ? (
+              <div className="loading">
+                <div className="loading-ticket">🎩</div>
+                <p>Rounding up the crew…</p>
               </div>
-
-              {editing && editing.id === m.id ? (
-                <form className="mgmt-edit" onSubmit={saveEdit}>
-                  <div className="mgmt-edit-grid">
-                    <label className="field">
-                      <span className="field-label">Display name</span>
-                      <input
-                        type="text"
-                        maxLength={40}
-                        placeholder={m.username}
-                        value={editing.displayName}
-                        onChange={(e) => setEditing((ed) => ({ ...ed, displayName: e.target.value }))}
-                      />
-                    </label>
-                    <label className="field">
-                      <span className="field-label">Email</span>
-                      <input
-                        type="email"
-                        value={editing.email}
-                        onChange={(e) => setEditing((ed) => ({ ...ed, email: e.target.value }))}
-                      />
-                    </label>
-                    <label className="field">
-                      <span className="field-label">New password</span>
-                      <input
-                        type="password"
-                        placeholder="Leave blank to keep"
-                        value={editing.password}
-                        autoComplete="new-password"
-                        onChange={(e) => setEditing((ed) => ({ ...ed, password: e.target.value }))}
-                      />
-                      <span className="field-hint">8+ characters. Synced to Jellyfin &amp; RomM.</span>
-                    </label>
-                  </div>
-                  <div className="field">
-                    <span className="field-label">Avatar</span>
-                    <AvatarPicker
-                      value={editing.avatar}
-                      onChange={(v) => setEditing((ed) => ({ ...ed, avatar: v }))}
-                      palette={avatars}
-                      name={editing.displayName.trim() || m.username}
-                    />
-                  </div>
-                  <div className="mgmt-edit-actions">
-                    <button type="submit" className="btn btn-gold btn-small" disabled={busy}>
-                      Save
-                    </button>
-                    <button type="button" className="btn btn-ghost btn-small" disabled={busy} onClick={() => setEditing(null)}>
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              ) : null}
+            ) : users.length === 0 ? (
+              <p className="mgmt-hint">No members yet.</p>
+            ) : (
+              <div className="mgmt-list">
+                {users.map((user) => {
+                  const disabled = user.status === 'disabled';
+                  return (
+                    <div key={user.id} className="mgmt-card">
+                      <div className="mgmt-row">
+                        <Avatar avatar={user.avatar} name={user.displayName || user.username} size={40} />
+                        <div className="mgmt-main mgmt-main-user">
+                          <strong>
+                            {user.displayName || user.username}
+                            <span className="mgmt-user-handle">@{user.username}</span>
+                          </strong>
+                          <span className="mgmt-sub">{user.email || 'no email'}</span>
+                        </div>
+                        <span className={`mgmt-tag${disabled ? ' mgmt-tag-off' : ''}`}>
+                          {user.role === 'owner' ? 'owner' : disabled ? 'disabled' : 'member'}
+                        </span>
+                        {user.role !== 'owner' && (
+                          <div className="mgmt-side">
+                            {disabled ? (
+                              <button
+                                type="button"
+                                className="btn btn-small btn-ghost"
+                                disabled={busyId === user.id}
+                                onClick={() => userAction(user, 'enable', 'Re-enable')}
+                              >
+                                Re-enable
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn btn-small btn-danger"
+                                disabled={busyId === user.id}
+                                onClick={() => userAction(user, 'disable', 'Disable')}
+                              >
+                                Disable
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="btn btn-small btn-ghost"
+                              disabled={busyId === user.id}
+                              onClick={() => userAction(user, 'reset-password', 'Email a password reset to')}
+                            >
+                              Reset password
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div className="mgmt-side mgmt-footer">
+              <Link to="/guide" className="btn btn-small btn-ghost">
+                Point members at the Guide →
+              </Link>
             </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mgmt-section">
-        <h2 className="mgmt-title">➕ Add an existing member</h2>
-        <p className="mgmt-hint">
-          For people who already have a Jellyfin or RomM account (like family members). This sets a fresh password for
-          both, so tell them what you pick.
-        </p>
-        <form className="signup-form mgmt-form" onSubmit={addMember}>
-          <Field label="Username" value={addForm.username} onChange={(v) => setAddForm((f) => ({ ...f, username: v }))} />
-          <Field label="Email" type="email" value={addForm.email} onChange={(v) => setAddForm((f) => ({ ...f, email: v }))} />
-          <Field label="Password" type="password" value={addForm.password} onChange={(v) => setAddForm((f) => ({ ...f, password: v }))} />
-          <button type="submit" className="btn btn-gold" disabled={busy}>
-            {busy ? 'Adding…' : 'Add member'}
-          </button>
-        </form>
-      </section>
-
-      <section className="mgmt-section">
-        <h2 className="mgmt-title">🛠️ Owner tools</h2>
-        <div className="app-grid owner-grid">
-          {ownerApps.map((app) => (
-            <AppCard key={app.name} app={app} />
-          ))}
-        </div>
-      </section>
-
-      <section className="mgmt-section">
-        <h2 className="mgmt-title">🎨 Customize your site</h2>
-        <p className="mgmt-hint">
-          Set a custom banner for the top of the home page, and post announcements for everyone to see.
-        </p>
-
-        {customError && <div className="banner banner-error">{customError}</div>}
-        {customSaved && <div className="banner banner-ok">Your site customizations are live.</div>}
-
-        <form className="signup-form mgmt-form" onSubmit={saveCustomization}>
-          <div className="field">
-            <span className="field-label">Home page banner</span>
-            <BannerPicker value={bannerForm.image} onChange={(image) => setBannerForm((b) => ({ ...b, image }))} />
           </div>
+        </Reveal>
+      )}
 
-          <label className="field">
-            <span className="field-label">Banner tagline</span>
-            <input
-              type="text"
-              maxLength={120}
-              placeholder="Movies, games, and a little bit of magic…"
-              value={bannerForm.tagline}
-              onChange={(e) => setBannerForm((b) => ({ ...b, tagline: e.target.value }))}
-            />
-            <span className="field-hint">Shown under the title on the banner. Leave blank for the default.</span>
-          </label>
+      {tab === 'settings' && (
+        <Reveal>
+          <div className="mgmt-section">
+            <div className="mgmt-card mgmt-edit">
+              <h3 className="mgmt-title">Member notifications</h3>
+              <p className="mgmt-hint">
+                Members can subscribe in the Guide to get pinged when new media or announcements arrive.
+                Notifications go through the ntfy app (set NTFY_URL + NTFY_TOPIC on the server).
+              </p>
+              <div className="mgmt-side">
+                <button type="button" className="btn btn-ghost" disabled={notify.busy} onClick={sendTestNotification}>
+                  {notify.busy ? 'Sending…' : 'Send test notification'}
+                </button>
+                {notify.sent && <span className="owner-settings-ok">Sent — check your phone</span>}
+                {notify.error && <span className="owner-settings-err">{notify.error}</span>}
+              </div>
+            </div>
 
-          <div className="field">
-            <span className="field-label">Announcements</span>
-            <div className="announce-editor">
-              {announcements.length === 0 ? (
-                <p className="mgmt-hint">No announcements yet — add one to post a message on the home page.</p>
+            <div className="mgmt-card mgmt-edit">
+              <h3 className="mgmt-title">Announcements</h3>
+              <p className="mgmt-hint">
+                Banner notices for the home page. Turning one on also pushes it out to members as a notification.
+              </p>
+              {saving && <p className="mgmt-sub">Saving…</p>}
+              {settings?.announcements?.length ? (
+                <div className="mgmt-list">
+                  {settings.announcements.map((a) => (
+                    <label key={a.id} className="mgmt-row mgmt-row-toggle">
+                      <input
+                        type="checkbox"
+                        checked={!!a.enabled}
+                        onChange={() => toggleAnnouncement(a)}
+                        aria-label={`Enable announcement ${a.title}`}
+                      />
+                      <div className="mgmt-main">
+                        <strong>{a.title}</strong>
+                        {a.body && <span className="mgmt-sub">{a.body}</span>}
+                      </div>
+                    </label>
+                  ))}
+                </div>
               ) : (
-                announcements.map((a, i) => (
-                  <div key={a.id} className="announce-row">
-                    <div className="announce-row-grid">
-                      <input
-                        type="text"
-                        maxLength={80}
-                        placeholder="Title"
-                        value={a.title}
-                        onChange={(e) =>
-                          setAnnouncements((list) => list.map((x) => (x.id === a.id ? { ...x, title: e.target.value } : x)))
-                        }
-                      />
-                      <input
-                        type="text"
-                        maxLength={300}
-                        placeholder="Message"
-                        value={a.body}
-                        onChange={(e) =>
-                          setAnnouncements((list) => list.map((x) => (x.id === a.id ? { ...x, body: e.target.value } : x)))
-                        }
-                      />
-                    </div>
-                    <div className="announce-row-actions">
-                      <label className="announce-toggle">
-                        <input
-                          type="checkbox"
-                          checked={a.enabled}
-                          onChange={(e) =>
-                            setAnnouncements((list) =>
-                              list.map((x) => (x.id === a.id ? { ...x, enabled: e.target.checked } : x)),
-                            )
-                          }
-                        />
-                        <span>Show</span>
-                      </label>
-                      <button
-                        type="button"
-                        className="btn btn-danger btn-small"
-                        onClick={() => setAnnouncements((list) => list.filter((x) => x.id !== a.id))}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ))
+                <p className="mgmt-hint">No announcements yet.</p>
               )}
-              <button
-                type="button"
-                className="btn btn-ghost btn-small"
-                onClick={() => setAnnouncements((list) => [...list, newAnnouncement()])}
-              >
-                ➕ Add announcement
-              </button>
             </div>
           </div>
-
-          <button type="submit" className="btn btn-gold" disabled={customBusy}>
-            {customBusy ? 'Saving…' : 'Save customizations'}
-          </button>
-        </form>
-      </section>
+        </Reveal>
+      )}
     </div>
-  );
-}
-
-function Field({ label, type = 'text', value, onChange }) {
-  return (
-    <label className="field">
-      <span className="field-label">{label}</span>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} required />
-    </label>
   );
 }

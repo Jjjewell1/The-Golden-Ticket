@@ -68,13 +68,13 @@ export default function Requests() {
       <section className="mgmt-section">
         <h2 className="mgmt-title">📦 Recently requested</h2>
         <p className="mgmt-hint">
-          Requests made in the last 24 hours, newest first. The status refreshes every minute or so.
+          The 10 most recent requests, newest first. The status refreshes every minute or so.
         </p>
 
         {error ? null : loading ? (
           <p className="sidebar-widget-empty">Checking the queue…</p>
         ) : requests.length === 0 ? (
-          <p className="sidebar-widget-empty">No requests in the last 24 hours.</p>
+          <p className="sidebar-widget-empty">No requests yet.</p>
         ) : (
           <div className="request-list">
             {requests.map((r) => (

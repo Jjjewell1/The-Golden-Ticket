@@ -15,7 +15,7 @@ import { publicUser } from '../lib/sanitize.js';
 import { provision } from '../services/provision.js';
 import { decideRequest } from '../services/decide.js';
 
-export function ownerRouter({ store, jellyfin, romm, mailer, secret }) {
+export function ownerRouter({ store, jellyfin, romm, mailer, secret, ntfy }) {
   const router = Router();
   const ownerOnly = requireOwner({ store, secret });
 
@@ -175,6 +175,7 @@ export function ownerRouter({ store, jellyfin, romm, mailer, secret }) {
   router.patch('/owner/settings', ownerOnly, async (req, res) => {
     const body = req.body || {};
     const patch = {};
+    const prevAnnouncements = store.getSetting('announcements', []);
 
     if ('banner' in body) {
       const b = body.banner || {};
@@ -209,11 +210,38 @@ export function ownerRouter({ store, jellyfin, romm, mailer, secret }) {
       Object.entries(patch).map(([k, v]) => store.setSetting(k, v)),
     );
 
+    if (ntfy?.enabled && 'announcements' in patch) {
+      const prev = Array.isArray(prevAnnouncements) ? prevAnnouncements : [];
+      const prevIds = new Set(prev.map((a) => a && a.id));
+      const fresh = (patch.announcements || []).filter((a) => a.enabled && !prevIds.has(a.id));
+      for (const a of fresh) {
+        await ntfy.notify({
+          title: '📣 New announcement',
+          message: a.title + (a.body ? ` — ${a.body}` : ''),
+          tags: ['megaphone'],
+          click: config.publicUrl,
+        });
+      }
+    }
+
     res.json({
       ok: true,
       banner: store.getSetting('banner', { image: '', tagline: '' }),
       announcements: store.getSetting('announcements', []),
     });
+  });
+
+  router.post('/owner/test-notify', ownerOnly, async (req, res) => {
+    if (!ntfy || !ntfy.enabled) {
+      return res.status(503).json({ error: 'Notifications are not configured yet.' });
+    }
+    await ntfy.notify({
+      title: 'Test from The Golden Ticket 🥳',
+      message: 'This is a test notification — members will see something like this when new media is added.',
+      tags: ['test_tube'],
+      click: config.publicUrl,
+    });
+    res.json({ ok: true });
   });
 
   router.post('/owner/decision/:requestId', ownerOnly, async (req, res) => {

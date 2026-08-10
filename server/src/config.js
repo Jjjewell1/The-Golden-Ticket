@@ -151,6 +151,11 @@ export const config = {
     url: (env.LINKWARDEN_URL || 'https://link.jewellcore.com').replace(/\/+$/, ''),
     apiKey: env.LINKWARDEN_API_KEY || '',
   },
+  ntfy: {
+    url: (env.NTFY_URL || '').replace(/\/+$/, ''),
+    topic: env.NTFY_TOPIC || '',
+    auth: env.NTFY_AUTH || '',
+  },
   ticketCode: env.TICKET_CODE || '',
   ownerPin: env.OWNER_PIN || '',
   ownerAccount: (env.OWNER_ACCOUNT || '').toLowerCase(),

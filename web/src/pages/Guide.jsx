@@ -1,4 +1,5 @@
 import { guideContent } from '../config/content.js';
+import NotifyCard from '../components/NotifyCard.jsx';
 
 export default function Guide() {
   return (
@@ -23,6 +24,8 @@ export default function Guide() {
           </div>
         ))}
       </div>
+
+      <NotifyCard />
     </div>
   );
 }

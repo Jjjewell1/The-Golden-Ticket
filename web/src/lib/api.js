@@ -1,6 +1,10 @@
 export async function getJson(path) {
   const res = await fetch(path);
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    if (detail && detail.error) throw new Error(detail.error);
+    throw new Error(`Request failed: ${res.status}`);
+  }
   return res.json();
 }
 
@@ -28,8 +32,12 @@ export function getConfig() {
   return getJson('/api/config');
 }
 
-export async function getRecentlyAdded() {
-  return getJson('/api/recently-added');
+export async function getRecentlyAdded(type = 'all', limit = 0) {
+  const params = new URLSearchParams();
+  if (type && type !== 'all') params.set('type', type);
+  if (limit > 0) params.set('limit', String(limit));
+  const qs = params.toString();
+  return getJson(`/api/recently-added${qs ? `?${qs}` : ''}`);
 }
 
 export async function getGames() {
@@ -130,6 +138,10 @@ export function getOwnerSettings() {
 
 export async function patchOwnerSettings(payload) {
   return patchJson('/api/owner/settings', payload);
+}
+
+export function postOwnerTestNotify() {
+  return postJson('/api/owner/test-notify');
 }
 
 export async function verifyOwnerPin(pin) {

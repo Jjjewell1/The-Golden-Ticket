@@ -11,6 +11,7 @@ import Movies from './pages/Movies.jsx';
 import Games from './pages/Games.jsx';
 import Bookmarks from './pages/Bookmarks.jsx';
 import Requests from './pages/Requests.jsx';
+import RecentlyAdded from './pages/RecentlyAdded.jsx';
 import Signup from './pages/Signup.jsx';
 import Login from './pages/Login.jsx';
 import Forgot from './pages/Forgot.jsx';
@@ -71,6 +72,7 @@ function Shell() {
           <Route path="/games" element={<Games />} />
           <Route path="/bookmarks" element={<Bookmarks />} />
           <Route path="/requests" element={<Requests />} />
+          <Route path="/recently-added" element={<RecentlyAdded />} />
           <Route path="/guide" element={<Guide />} />
           <Route path="/owner" element={<Owner />} />
           <Route path="/profile" element={<Profile />} />

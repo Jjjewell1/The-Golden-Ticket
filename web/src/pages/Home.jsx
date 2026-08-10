@@ -365,8 +365,8 @@ export default function Home() {
               <h2 className="section-title">Fresh on Jellyfin</h2>
               <p className="section-sub">The latest arrivals to the library.</p>
             </div>
-            <Link to="/movies" className="btn btn-small btn-ghost">
-              All movies →
+            <Link to="/recently-added?type=movie" className="btn btn-small btn-ghost">
+              See all →
             </Link>
           </div>
           <Spotlight
@@ -390,6 +390,9 @@ export default function Home() {
               <h3 className="section-kicker">New series</h3>
               <h2 className="section-title">Fresh shows</h2>
             </div>
+            <Link to="/recently-added?type=series" className="btn btn-small btn-ghost">
+              See all →
+            </Link>
           </div>
           <PosterRail items={seriesRail} size="tall" onSelect={openRail('movie')} />
         </Reveal>
@@ -402,8 +405,8 @@ export default function Home() {
               <h2 className="section-title">Fresh on RomM</h2>
               <p className="section-sub">New games in the arcade.</p>
             </div>
-            <Link to="/games" className="btn btn-small btn-ghost">
-              All games →
+            <Link to="/recently-added?type=game" className="btn btn-small btn-ghost">
+              See all →
             </Link>
           </div>
           <PosterRail items={gameRail} size="wide" onSelect={openRail('game')} />

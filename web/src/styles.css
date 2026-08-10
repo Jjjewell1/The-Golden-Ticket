@@ -3870,6 +3870,122 @@ button.rail-card-btn:focus-visible {
   max-width: 520px;
 }
 
+.tab-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.tab {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.tab:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.tab.active {
+  background: var(--grad-a);
+  color: #0f172a;
+  border-color: transparent;
+  box-shadow: 0 6px 16px var(--glow);
+}
+
+.btn-ok {
+  background: #16a34a;
+  color: #fff;
+}
+
+.btn-ok:hover {
+  background: #15803d;
+}
+
+.mgmt-row-toggle {
+  cursor: pointer;
+}
+
+.mgmt-footer {
+  margin-top: 18px;
+}
+
+.owner-settings-ok {
+  color: #4ade80;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.owner-settings-err {
+  color: #f87171;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ---------- notify card ---------- */
+
+.notify-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  padding: 22px 24px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 14%, var(--card)),
+    var(--card)
+  );
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+  box-shadow: var(--glass-shadow);
+}
+
+.notify-card-icon {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  box-shadow: 0 8px 20px var(--glow);
+}
+
+.notify-card-body {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.notify-card-body h3 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.notify-card-body p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.notify-card .btn {
+  flex: 0 0 auto;
+}
+
 /* ---------- responsive ---------- */
 
 @media (max-width: 1020px) {

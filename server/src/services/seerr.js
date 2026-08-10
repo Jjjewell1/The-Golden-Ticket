@@ -23,7 +23,7 @@ export class Seerr {
     return data?.pageInfo?.results ?? 0;
   }
 
-  async getRequests(take = 15, skip = 0) {
+  async getRequests(take = 10, skip = 0) {
     // Pull every request (paginated) so the downloading count is accurate even
     // when there are more requests than the display list uses. Only the recent
     // `take` items get the TMDB enrichment for display.
@@ -47,13 +47,8 @@ export class Seerr {
     // declined, failed, approved-but-idle, and pending requests don't count.
     const downloadingCount = all.filter((r) => statusOf(r).key === 'downloading').length;
 
-    // The list under the count shows the most recent requests (last 24 hours).
-    const since = Date.now() - 24 * 60 * 60 * 1000;
+    // The list under the count shows the 10 most recent requests, newest first.
     const recent = all
-      .filter((r) => {
-        const t = r.createdAt ? new Date(r.createdAt).getTime() : 0;
-        return t >= since;
-      })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(skip, skip + take);
 

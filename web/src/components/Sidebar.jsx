@@ -13,6 +13,7 @@ const navLinks = [
   { to: '/games', label: 'Games', icon: '🕹️' },
   { to: '/bookmarks', label: 'Bookmarks', icon: '📑' },
   { to: '/requests', label: 'Requests', icon: '🎟️' },
+  { to: '/recently-added', label: 'Recently added', icon: '🆕' },
   { to: '/guide', label: 'Guide', icon: '🧭' },
   { to: '/profile', label: 'My profile', icon: '🎩' },
 ];
