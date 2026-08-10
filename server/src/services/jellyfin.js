@@ -215,6 +215,13 @@ export class Jellyfin {
     return { existing: false, user };
   }
 
+  async deleteUser(username) {
+    const existing = await this.findUser(username);
+    if (!existing) return null;
+    await this.request(`/Users/${encodeURIComponent(existing.id)}`, { method: 'DELETE' });
+    return { id: existing.id, name: existing.name };
+  }
+
   async fetchImage(itemId, imageTag, maxWidth = 600) {
     const url = new URL(`${this.url}/Items/${encodeURIComponent(itemId)}/Images/Primary`);
     url.searchParams.set('maxWidth', String(maxWidth));

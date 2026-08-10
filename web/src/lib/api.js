@@ -128,6 +128,10 @@ export async function postOwnerUserAction(userId, action) {
   return postJson(`/api/owner/users/${encodeURIComponent(userId)}/${action}`);
 }
 
+export async function postOwnerUserDelete(userId) {
+  return postJson(`/api/owner/users/${encodeURIComponent(userId)}/delete`);
+}
+
 export async function patchOwnerUser(userId, payload) {
   return patchJson(`/api/owner/users/${encodeURIComponent(userId)}`, payload);
 }

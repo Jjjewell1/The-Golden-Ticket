@@ -115,6 +115,25 @@ export function ownerRouter({ store, jellyfin, romm, mailer, secret, ntfy }) {
     res.json({ ok: true });
   });
 
+  router.post('/owner/users/:id/delete', ownerOnly, async (req, res) => {
+    if (req.params.id === req.user.id) {
+      return res.status(400).json({ error: 'You cannot delete your own account.' });
+    }
+    const user = store.findUserById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    if (user.role === 'owner') {
+      return res.status(400).json({ error: 'You cannot delete the owner account.' });
+    }
+
+    const removed = await store.removeUser(req.params.id);
+    const synced = await Promise.allSettled([
+      jellyfin.deleteUser(user.username),
+      romm.deleteUser(user.username),
+    ]).then((r) => r.map((x) => (x.status === 'fulfilled' ? x.value : { error: x.reason.message })));
+
+    res.json({ ok: true, user: publicUser(removed), synced });
+  });
+
   router.patch('/owner/users/:id', ownerOnly, async (req, res) => {
     const user = store.findUserById(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found.' });
@@ -153,8 +172,13 @@ export function ownerRouter({ store, jellyfin, romm, mailer, secret, ntfy }) {
       patch.passwordHash = hashPassword(body.password);
       synced = await Promise.allSettled([
         jellyfin.ensureUserPassword(user.username, body.password),
-        romm.ensureUserPassword(user.username, user.email, body.password),
+        romm.ensureUserPassword(user.username, body.email?.trim()?.toLowerCase() || user.email, body.password),
       ]).then((r) => r.map((x) => (x.status === 'fulfilled' ? x.value : { error: x.reason.message })));
+    } else if (keys.includes('email')) {
+      const ne = patch.email;
+      synced = await Promise.allSettled([romm.updateUserEmail(user.username, ne)]).then((r) =>
+        r.map((x) => (x.status === 'fulfilled' ? x.value : { error: x.reason.message })),
+      );
     }
 
     const updated = await store.updateUser(user.id, patch);

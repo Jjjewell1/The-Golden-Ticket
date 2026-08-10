@@ -83,6 +83,13 @@ export class Store {
     return this._save().then(() => user);
   }
 
+  removeUser(id) {
+    const idx = this.data.users.findIndex((x) => x.id === id);
+    if (idx === -1) return null;
+    const [user] = this.data.users.splice(idx, 1);
+    return this._save().then(() => user);
+  }
+
   /* ---------- signup requests ---------- */
 
   requests() {

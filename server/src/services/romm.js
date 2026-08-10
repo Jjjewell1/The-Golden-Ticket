@@ -26,7 +26,7 @@ export class Romm {
     }
   }
 
-  async request(path, { method = 'GET', body, auth = false, csrf = false } = {}) {
+  async _requestOnce(path, { method = 'GET', body, auth = false, csrf = false } = {}) {
     const url = new URL(`${this.url}${path}`);
     const headers = { Accept: 'application/json' };
     if (this.cookies.size) headers.Cookie = this.cookieHeader();
@@ -49,6 +49,31 @@ export class Romm {
     return res;
   }
 
+  // RomM signs the user's id into the csrftoken cookie and only rotates it to
+  // a user-bound token on an authenticated response. Hitting an authenticated
+  // GET forces that rotation so later state-changing calls (POST/PUT/DELETE)
+  // pass the CSRF check instead of failing with "CSRF token verification failed".
+  async _primeCsrf() {
+    const res = await this._requestOnce('/api/platforms', { method: 'GET' });
+    if (res.status === 401) {
+      throw new Error(`RomM: session did not stick after login (${res.status}).`);
+    }
+  }
+
+  async request(path, options = {}) {
+    const res = await this._requestOnce(path, options);
+
+    if (options.csrf && res.status === 403) {
+      const detail = await res.text().catch(() => '');
+      if (detail.includes('CSRF')) {
+        await this._primeCsrf();
+        return this._requestOnce(path, options);
+      }
+    }
+
+    return res;
+  }
+
   async ensureSession() {
     if (this.sessionExpiresAt > Date.now()) return;
 
@@ -65,6 +90,8 @@ export class Romm {
     if (login.status !== 200 || !this.cookies.get('romm_session')) {
       throw new Error(`RomM: login failed (${login.status}). Check ROMM_ADMIN_USER/PASSWORD.`);
     }
+
+    await this._primeCsrf();
 
     this.sessionExpiresAt = Date.now() + 60 * 60 * 1000;
   }
@@ -274,6 +301,39 @@ export class Romm {
     }
     const user = await this.createUser(username, email, password);
     return { existing: false, user };
+  }
+
+  async updateUserEmail(username, email) {
+    const existing = await this.findUser(username);
+    if (!existing) return null;
+    const res = await this.request(`/api/users/${existing.id}`, {
+      method: 'PUT',
+      csrf: true,
+      body: { email },
+    });
+    if (res.status === 401) {
+      this.sessionExpiresAt = 0;
+      await this.ensureSession();
+      return this.updateUserEmail(username, email);
+    }
+    if (!res.ok) throw new Error(`RomM: update email failed ${res.status}`);
+    return res.json();
+  }
+
+  async deleteUser(username) {
+    const existing = await this.findUser(username);
+    if (!existing) return null;
+    const res = await this.request(`/api/users/${existing.id}`, {
+      method: 'DELETE',
+      csrf: true,
+    });
+    if (res.status === 401) {
+      this.sessionExpiresAt = 0;
+      await this.ensureSession();
+      return this.deleteUser(username);
+    }
+    if (!res.ok) throw new Error(`RomM: delete user failed ${res.status}`);
+    return { id: existing.id, username: existing.username };
   }
 
   async fetchAsset(path) {

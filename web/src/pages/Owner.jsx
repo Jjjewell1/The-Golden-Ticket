@@ -5,8 +5,10 @@ import {
   getOwnerUsers,
   getOwnerSettings,
   patchOwnerSettings,
+  patchOwnerUser,
   postOwnerDecision,
   postOwnerUserAction,
+  postOwnerUserDelete,
   postOwnerTestNotify,
 } from '../lib/api.js';
 import Avatar from '../components/Avatar.jsx';
@@ -24,6 +26,7 @@ export default function Owner() {
   const [busyId, setBusyId] = useState(null);
   const [notify, setNotify] = useState({ busy: false, sent: false, error: '' });
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -83,6 +86,41 @@ export default function Owner() {
     }
     const fresh = await getOwnerUsers();
     setUsers(fresh.users || []);
+  };
+
+  const deleteUser = async (u) => {
+    if (!window.confirm(`Permanently delete ${u.username}?\n\nThis removes their Jellyfin, RomM and site accounts. This cannot be undone.`)) {
+      return;
+    }
+    setBusyId(u.id);
+    const res = await postOwnerUserDelete(u.id);
+    setBusyId(null);
+    if (!res.ok) {
+      window.alert(res.data.error || 'Could not delete that member.');
+      return;
+    }
+    const fresh = await getOwnerUsers();
+    setUsers(fresh.users || []);
+  };
+
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    if (!editing) return;
+    setBusyId(editing.id);
+    const payload = {
+      displayName: editing.displayName ?? '',
+      email: editing.email.trim(),
+    };
+    if (editing.password) payload.password = editing.password;
+    const res = await patchOwnerUser(editing.id, payload);
+    setBusyId(null);
+    if (!res.ok) {
+      window.alert(res.data.error || 'Could not save those changes.');
+      return;
+    }
+    const fresh = await getOwnerUsers();
+    setUsers(fresh.users || []);
+    setEditing(null);
   };
 
   const pendingCount = (requests || []).filter((r) => r.status === 'pending').length;
@@ -221,6 +259,22 @@ export default function Owner() {
                             >
                               Reset password
                             </button>
+                            <button
+                              type="button"
+                              className="btn btn-small btn-ghost"
+                              disabled={busyId === user.id}
+                              onClick={() => setEditing({ id: user.id, username: user.username, displayName: user.displayName || '', email: user.email || '', password: '' })}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-small btn-danger"
+                              disabled={busyId === user.id}
+                              onClick={() => deleteUser(user)}
+                            >
+                              Delete
+                            </button>
                           </div>
                         )}
                       </div>
@@ -285,6 +339,60 @@ export default function Owner() {
             </div>
           </div>
         </Reveal>
+      )}
+
+      {editing && (
+        <div className="modal" role="dialog" aria-modal="true" aria-label={`Edit ${editing.username}`} onClick={() => !busyId && setEditing(null)}>
+          <div className="modal-card modal-card-narrow" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="modal-close" onClick={() => setEditing(null)} aria-label="Close">
+              ✕
+            </button>
+            <div className="modal-info">
+              <span className="modal-kicker">Member settings</span>
+              <h2 className="modal-title">@{editing.username}</h2>
+              <form className="mgmt-form mgmt-form-modal" onSubmit={saveEdit}>
+                <label className="field">
+                  <span className="field-label">Display name</span>
+                  <input
+                    type="text"
+                    value={editing.displayName ?? ''}
+                    onChange={(e) => setEditing({ ...editing, displayName: e.target.value })}
+                    placeholder="Visible to members"
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">Email</span>
+                  <input
+                    type="email"
+                    value={editing.email ?? ''}
+                    onChange={(e) => setEditing({ ...editing, email: e.target.value })}
+                    required
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">New password</span>
+                  <input
+                    type="password"
+                    value={editing.password ?? ''}
+                    onChange={(e) => setEditing({ ...editing, password: e.target.value })}
+                    placeholder="Leave blank to keep the current password"
+                  />
+                </label>
+                <p className="field-hint">
+                  The password is synced to Jellyfin and RomM. Leave it blank to only update the email.
+                </p>
+                <div className="mgmt-side mgmt-footer">
+                  <button type="button" className="btn btn-ghost" disabled={busyId === editing.id} onClick={() => setEditing(null)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-gold" disabled={busyId === editing.id}>
+                    {busyId === editing.id ? 'Saving…' : 'Save changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
