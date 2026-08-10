@@ -21,6 +21,9 @@ services:
       - SEERR_API_KEY=${SEERR_API_KEY}
       - LINKWARDEN_URL=${LINKWARDEN_URL:-https://link.jewellcore.com}
       - LINKWARDEN_API_KEY=${LINKWARDEN_API_KEY}
+      - NTFY_URL=${NTFY_URL}
+      - NTFY_TOPIC=${NTFY_TOPIC}
+      - NTFY_AUTH=${NTFY_AUTH}
       - TICKET_CODE=${TICKET_CODE}
       - OWNER_PIN=${OWNER_PIN}
       - OWNER_ACCOUNT=${OWNER_ACCOUNT:-JJ_Jewell}

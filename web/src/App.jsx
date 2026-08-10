@@ -6,6 +6,7 @@ import Background from './components/Background.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Topbar from './components/Topbar.jsx';
 import Footer from './components/Footer.jsx';
+import NotifyPrompt from './components/NotifyPrompt.jsx';
 import Home from './pages/Home.jsx';
 import Movies from './pages/Movies.jsx';
 import Games from './pages/Games.jsx';
@@ -63,6 +64,7 @@ function Shell() {
   return (
     <div className="app">
       <Background />
+      <NotifyPrompt />
       <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
       <Topbar onMenu={() => setMenuOpen((o) => !o)} />
       <main className="main">

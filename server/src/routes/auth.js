@@ -6,6 +6,14 @@ import { validatePassword, validateDisplayName } from '../lib/validate.js';
 import { validateAvatar } from '../lib/avatars.js';
 import { publicUser } from '../lib/sanitize.js';
 
+const notifyConfigured = (config) => !!(config.ntfy && config.ntfy.url && config.ntfy.topic);
+
+function withNotifyPrompt(user, config) {
+  const pub = publicUser(user);
+  pub.notifyPrompt = !!(notifyConfigured(config) && user.role === 'member' && !user.notifyPromptSeen);
+  return pub;
+}
+
 export function authRouter({ store, jellyfin, romm, mailer, secret, config }) {
   const router = Router();
   const loginLimiter = createRateLimiter(5, 15 * 60 * 1000);
@@ -28,7 +36,7 @@ export function authRouter({ store, jellyfin, romm, mailer, secret, config }) {
     }
 
     res.setHeader('Set-Cookie', createSessionCookie(user, secret));
-    res.json({ user: publicUser(user) });
+    res.json({ user: withNotifyPrompt(user, config) });
   });
 
   router.post('/auth/logout', (req, res) => {
@@ -50,12 +58,13 @@ export function authRouter({ store, jellyfin, romm, mailer, secret, config }) {
   });
 
   router.get('/auth/me', auth, (req, res) => {
-    res.json({ user: publicUser(req.user) });
+    res.json({ user: withNotifyPrompt(req.user, config) });
   });
 
   router.patch('/auth/me', auth, (req, res) => {
-    const { displayName, avatar } = req.body || {};
-    if (!('displayName' in (req.body || {})) && !('avatar' in (req.body || {}))) {
+    const body = req.body || {};
+    const { displayName, avatar, notifyPromptSeen } = body;
+    if (!('displayName' in body) && !('avatar' in body) && !('notifyPromptSeen' in body)) {
       return res.status(400).json({ error: 'Nothing to update.' });
     }
     const nErr = validateDisplayName(displayName);
@@ -64,14 +73,17 @@ export function authRouter({ store, jellyfin, romm, mailer, secret, config }) {
     if (aErr) return res.status(400).json({ error: aErr });
 
     const patch = {};
-    if ('displayName' in (req.body || {})) {
+    if ('displayName' in body) {
       patch.displayName = typeof displayName === 'string' ? displayName.trim() : '';
     }
-    if ('avatar' in (req.body || {})) {
+    if ('avatar' in body) {
       patch.avatar = avatar || '';
     }
+    if ('notifyPromptSeen' in body) {
+      patch.notifyPromptSeen = notifyPromptSeen === true;
+    }
     store.updateUser(req.user.id, patch).then((user) => {
-      res.json({ ok: true, user: publicUser(user) });
+      res.json({ ok: true, user: withNotifyPrompt(user, config) });
     });
   });
 

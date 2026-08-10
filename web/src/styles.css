@@ -3997,6 +3997,39 @@ button.rail-card-btn:focus-visible {
   flex: 0 0 auto;
 }
 
+/* ---------- notify prompt (new-member popup) ---------- */
+
+.notify-prompt {
+  text-align: center;
+}
+
+.notify-prompt .notify-card-icon {
+  margin: 0 auto 6px;
+}
+
+.notify-prompt-title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.notify-prompt-text {
+  margin: 0 auto;
+  max-width: 380px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.notify-prompt-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
 /* ---------- responsive ---------- */
 
 @media (max-width: 1020px) {
