@@ -82,6 +82,7 @@ export class Seerr {
           year,
           is4k,
           posterPath,
+          tmdbId: media.tmdbId ?? null,
           requestedBy:
             r.requestedBy?.displayName ||
             r.requestedBy?.jellyfinUsername ||

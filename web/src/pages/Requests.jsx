@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react';
-import { getRequests } from '../lib/api.js';
+import { getRequests, movieHref } from '../lib/api.js';
 
 const seerrUrl = 'https://grab.jewellcore.com';
 
 const TYPE_ICON = { movie: '🎬', tv: '📺', series: '📺' };
 
 const posterUrl = (path) => (path ? `https://image.tmdb.org/t/p/w92${path}` : null);
+
+// Prefer a deep link to the movie in Jellyfin when it's in the library; fall
+// back to the request's own page on the request app so pending items still work.
+function requestHref(r) {
+  if (r.jellyfinId) return movieHref(r.jellyfinId);
+  if (r.tmdbId) return `${seerrUrl}/${r.type === 'tv' ? 'tv' : 'movie'}/${encodeURIComponent(r.tmdbId)}`;
+  return null;
+}
 
 function fmtDate(d) {
   if (!d) return '';
@@ -77,37 +85,56 @@ export default function Requests() {
           <p className="sidebar-widget-empty">No requests yet.</p>
         ) : (
           <div className="request-list">
-            {requests.map((r) => (
-              <div key={r.id} className="request-row">
-                {r.posterPath ? (
-                  <img
-                    className="request-row-poster"
-                    src={posterUrl(r.posterPath)}
-                    alt=""
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="request-row-icon" aria-hidden="true">
-                    {TYPE_ICON[r.type] || '🎬'}
+            {requests.map((r) => {
+              const href = requestHref(r);
+              const inner = (
+                <>
+                  {r.posterPath ? (
+                    <img
+                      className="request-row-poster"
+                      src={posterUrl(r.posterPath)}
+                      alt=""
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="request-row-icon" aria-hidden="true">
+                      {TYPE_ICON[r.type] || '🎬'}
+                    </div>
+                  )}
+                  <div className="request-row-main">
+                    <strong className="request-row-title">
+                      {r.title}
+                      {r.year ? <span className="request-row-year">{r.year}</span> : null}
+                    </strong>
+                    <span className="request-row-meta">
+                      {r.requestedBy}
+                      {r.requestedAt ? ` · requested ${fmtDate(r.requestedAt)}` : ''}
+                      {r.is4k ? ' · 4K' : ''}
+                    </span>
                   </div>
-                )}
-                <div className="request-row-main">
-                  <strong className="request-row-title">
-                    {r.title}
-                    {r.year ? <span className="request-row-year">{r.year}</span> : null}
-                  </strong>
-                  <span className="request-row-meta">
-                    {r.requestedBy}
-                    {r.requestedAt ? ` · requested ${fmtDate(r.requestedAt)}` : ''}
-                    {r.is4k ? ' · 4K' : ''}
+                  <span className="request-status" data-tone={r.status?.key}>
+                    <span className="request-status-dot" />
+                    {r.status?.label || 'Processing'}
                   </span>
+                </>
+              );
+              return href ? (
+                <a
+                  key={r.id}
+                  className="request-row request-row-link"
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Open ${r.title}`}
+                >
+                  {inner}
+                </a>
+              ) : (
+                <div key={r.id} className="request-row">
+                  {inner}
                 </div>
-                <span className="request-status" data-tone={r.status?.key}>
-                  <span className="request-status-dot" />
-                  {r.status?.label || 'Processing'}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

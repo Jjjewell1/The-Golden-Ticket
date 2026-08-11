@@ -479,6 +479,22 @@ a {
   text-overflow: ellipsis;
 }
 
+.sidebar-queue-item-link {
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-queue-item-link:hover {
+  background: var(--card-strong);
+}
+
+.sidebar-queue-item-link:hover .sidebar-queue-item-title {
+  color: var(--accent);
+}
+
 .sidebar-queue-item .request-status {
   flex-shrink: 0;
   padding: 3px 10px;
@@ -2726,6 +2742,40 @@ button.rail-card-btn:focus-visible {
   border-radius: 14px;
   background: var(--card);
   border: 1px solid var(--border);
+}
+
+.request-row-link {
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.request-row-link:hover,
+.request-row-link:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--card-strong);
+  transform: translateY(-1px);
+}
+
+.request-row-link:hover .request-row-title {
+  color: var(--accent);
+}
+
+.request-row-link .request-status {
+  position: relative;
+}
+
+.request-row-link .request-status::after {
+  content: '↗';
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.request-row-link:hover .request-status::after {
+  opacity: 1;
 }
 
 .request-row-icon {

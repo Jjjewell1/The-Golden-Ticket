@@ -127,6 +127,46 @@ export class Jellyfin {
     return (data.Items || []).map((item) => this.mapItem(item));
   }
 
+  // Lean index of the library keyed by TMDB id, used to resolve requests to
+  // their Jellyfin item so the UI can deep-link straight to the movie/show.
+  async getLibraryIndex(types = ['Movie', 'Series']) {
+    const all = [];
+    const pageSize = 500;
+    let index = 0;
+    let total = Infinity;
+    while (index < total) {
+      const data = await this.request('/Items', {
+        query: {
+          Recursive: true,
+          SortBy: 'SortName',
+          SortOrder: 'Ascending',
+          Limit: pageSize,
+          StartIndex: index,
+          ImageTypeLimit: 0,
+          EnableImageTypes: '',
+          IncludeItemTypes: types.join(','),
+          Fields: 'ProviderIds,ProductionYear',
+        },
+      });
+      const items = data.Items || [];
+      for (const item of items) {
+        const providerIds = item.ProviderIds || {};
+        all.push({
+          id: item.Id,
+          name: item.Name,
+          type: item.Type,
+          year: item.ProductionYear,
+          tmdbId: providerIds.Tmdb ? String(providerIds.Tmdb) : null,
+        });
+      }
+      total = data.TotalRecordCount ?? all.length;
+      if (items.length === 0) break;
+      index += items.length;
+      if (index >= 20_000) break;
+    }
+    return all;
+  }
+
   async getMovies() {
     const all = [];
     const pageSize = 100;

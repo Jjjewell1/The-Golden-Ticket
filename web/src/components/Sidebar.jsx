@@ -5,7 +5,7 @@ import ClockWidget from './ClockWidget.jsx';
 import WeatherWidget from './WeatherWidget.jsx';
 import Avatar from './Avatar.jsx';
 import { useAuth } from '../lib/auth.jsx';
-import { getSessions, getRequestCount, getStatus, posterUrl } from '../lib/api.js';
+import { getSessions, getRequestCount, getStatus, posterUrl, movieHref } from '../lib/api.js';
 
 const navLinks = [
   { to: '/', label: 'Home', icon: '🏠', end: true },
@@ -126,17 +126,37 @@ export default function Sidebar({ open, onClose }) {
             </div>
             {recentRequests.length > 0 && (
               <div className="sidebar-queue-list">
-                {recentRequests.slice(0, 5).map((r) => (
-                  <div key={r.id} className="sidebar-queue-item">
-                    <span className="sidebar-queue-item-title" title={r.title}>
-                      {r.title}
-                    </span>
+                {recentRequests.slice(0, 5).map((r) => {
+                  const href = r.jellyfinId
+                    ? movieHref(r.jellyfinId)
+                    : r.tmdbId
+                      ? `https://grab.jewellcore.com/${r.type === 'tv' ? 'tv' : 'movie'}/${encodeURIComponent(r.tmdbId)}`
+                      : null;
+                  const status = (
                     <span className="request-status" data-tone={r.status?.key}>
                       <span className="request-status-dot" />
                       {r.status?.label || 'Processing'}
                     </span>
-                  </div>
-                ))}
+                  );
+                  return href ? (
+                    <a
+                      key={r.id}
+                      className="sidebar-queue-item sidebar-queue-item-link"
+                      href={href}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={r.title}
+                    >
+                      <span className="sidebar-queue-item-title">{r.title}</span>
+                      {status}
+                    </a>
+                  ) : (
+                    <div key={r.id} className="sidebar-queue-item" title={r.title}>
+                      <span className="sidebar-queue-item-title">{r.title}</span>
+                      {status}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

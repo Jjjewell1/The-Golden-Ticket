@@ -161,6 +161,12 @@ export function posterUrl(id, tag, width = 400) {
   return `/api/img/jf/${encodeURIComponent(id)}${qs ? `?${qs}` : ''}`;
 }
 
+const JELLYFIN_URL = 'https://movies.jewellcore.com';
+
+export function movieHref(id) {
+  return `${JELLYFIN_URL}/web/index.html#/details?id=${encodeURIComponent(id)}`;
+}
+
 export function gameCoverUrl(coverPath) {
   if (!coverPath) return null;
   return `/api/img/romm?path=${encodeURIComponent(coverPath)}`;

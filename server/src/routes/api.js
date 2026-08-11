@@ -147,7 +147,36 @@ export function apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret, pu
 
   protectedGet('/requests', async (req, res) => {
     try {
-      const data = await cache.wrap('requests', () => seerr.getRequests(10), 60_000);
+      const data = await cache.wrap(
+        'requests',
+        async () => {
+          const result = await seerr.getRequests(10);
+          let library = [];
+          try {
+            library = await cache.wrap(
+              'requests:library',
+              () => jellyfin.getLibraryIndex(['Movie', 'Series']),
+              10 * 60_000,
+            );
+          } catch {
+            // If the library index is unreachable, requests still load — they
+            // just fall back to a request-page link instead of a Jellyfin one.
+            library = [];
+          }
+          const byTmdb = new Map();
+          for (const item of library) {
+            if (item.tmdbId && !byTmdb.has(item.tmdbId)) byTmdb.set(item.tmdbId, item);
+          }
+          result.requests = result.requests.map((r) => {
+            if (!r.tmdbId) return r;
+            const hit = byTmdb.get(String(r.tmdbId));
+            if (!hit) return r;
+            return { ...r, jellyfinId: hit.id, jellyfinType: hit.type === 'Series' ? 'series' : 'movie' };
+          });
+          return result;
+        },
+        60_000,
+      );
       res.json(data);
     } catch (err) {
       res.status(500).json({ error: err.message });
