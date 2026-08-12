@@ -150,6 +150,7 @@ export const config = {
   linkwarden: {
     url: (env.LINKWARDEN_URL || 'https://link.jewellcore.com').replace(/\/+$/, ''),
     apiKey: env.LINKWARDEN_API_KEY || '',
+    collectionId: env.LINKWARDEN_COLLECTION_ID ? Number(env.LINKWARDEN_COLLECTION_ID) : undefined,
   },
   ntfy: {
     url: (env.NTFY_URL || '').replace(/\/+$/, ''),

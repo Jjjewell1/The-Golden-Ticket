@@ -1,9 +1,10 @@
 import { fetchWithTimeout } from '../lib/http.js';
 
 export class Linkwarden {
-  constructor({ url, apiKey }) {
+  constructor({ url, apiKey, collectionId }) {
     this.url = url;
     this.apiKey = apiKey;
+    this.collectionId = collectionId;
     this.pageSize = 50;
   }
 
@@ -47,6 +48,7 @@ export class Linkwarden {
     const res = await this.request('/api/v1/links', {
       sort: 0,
       cursor,
+      collectionId: this.collectionId,
       searchQueryString,
     });
     const body = await res.json();
@@ -63,6 +65,7 @@ export class Linkwarden {
       searchQueryString: q,
       cursor,
       sort: 0,
+      collectionId: this.collectionId,
     });
     const body = await res.json();
     const data = body.data || {};
