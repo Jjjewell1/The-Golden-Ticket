@@ -19,7 +19,7 @@ const LINK_CHIPS = [
 const EMPTY = { title: '', body: '', link: '', image: '', postBanner: true };
 
 function fmt(t) {
-  return new Date(t).toLocaleDateString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  return new Date(t).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 function statusTag(m) {

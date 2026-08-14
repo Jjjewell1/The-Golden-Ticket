@@ -15,7 +15,7 @@ import MessagesCenter from '../components/MessagesCenter.jsx';
 import { Reveal } from '../lib/useFx.jsx';
 
 function fmt(t) {
-  return new Date(t).toLocaleDateString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  return new Date(t).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 export default function Owner() {
