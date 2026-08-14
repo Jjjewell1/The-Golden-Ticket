@@ -9,9 +9,9 @@ import {
   postOwnerDecision,
   postOwnerUserAction,
   postOwnerUserDelete,
-  postOwnerTestNotify,
 } from '../lib/api.js';
 import Avatar from '../components/Avatar.jsx';
+import MessagesCenter from '../components/MessagesCenter.jsx';
 import { Reveal } from '../lib/useFx.jsx';
 
 function fmt(t) {
@@ -24,7 +24,6 @@ export default function Owner() {
   const [users, setUsers] = useState(null);
   const [settings, setSettings] = useState(null);
   const [busyId, setBusyId] = useState(null);
-  const [notify, setNotify] = useState({ busy: false, sent: false, error: '' });
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(null);
 
@@ -63,16 +62,6 @@ export default function Owner() {
     const res = await patchOwnerSettings({ announcements: list });
     setSaving(false);
     if (res.ok) setSettings({ ...settings, announcements: res.data.announcements });
-  };
-
-  const sendTestNotification = async () => {
-    setNotify({ busy: true, sent: false, error: '' });
-    const res = await postOwnerTestNotify();
-    if (res.ok) {
-      setNotify({ busy: false, sent: true, error: '' });
-    } else {
-      setNotify({ busy: false, sent: false, error: res.data.error || 'Could not send the test notification.' });
-    }
   };
 
   const userAction = async (u, action, label) => {
@@ -140,6 +129,9 @@ export default function Owner() {
         </button>
         <button type="button" className={`tab${tab === 'users' ? ' active' : ''}`} onClick={() => setTab('users')}>
           Members
+        </button>
+        <button type="button" className={`tab${tab === 'messages' ? ' active' : ''}`} onClick={() => setTab('messages')}>
+          Messages
         </button>
         <button type="button" className={`tab${tab === 'settings' ? ' active' : ''}`} onClick={() => setTab('settings')}>
           Settings
@@ -292,24 +284,15 @@ export default function Owner() {
         </Reveal>
       )}
 
+      {tab === 'messages' && (
+        <Reveal>
+          <MessagesCenter />
+        </Reveal>
+      )}
+
       {tab === 'settings' && (
         <Reveal>
           <div className="mgmt-section">
-            <div className="mgmt-card mgmt-edit">
-              <h3 className="mgmt-title">Member notifications</h3>
-              <p className="mgmt-hint">
-                Members can subscribe in the Guide to get pinged when new media or announcements arrive.
-                Notifications go through the ntfy app (set NTFY_URL + NTFY_TOPIC on the server).
-              </p>
-              <div className="mgmt-side">
-                <button type="button" className="btn btn-ghost" disabled={notify.busy} onClick={sendTestNotification}>
-                  {notify.busy ? 'Sending…' : 'Send test notification'}
-                </button>
-                {notify.sent && <span className="owner-settings-ok">Sent — check your phone</span>}
-                {notify.error && <span className="owner-settings-err">{notify.error}</span>}
-              </div>
-            </div>
-
             <div className="mgmt-card mgmt-edit">
               <h3 className="mgmt-title">Announcements</h3>
               <p className="mgmt-hint">

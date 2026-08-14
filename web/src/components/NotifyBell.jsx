@@ -1,12 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { getMyDevices, postNotifyDevice, deleteNotifyDevice } from '../lib/api.js';
-import { isOnesignalEnabled, getSubscriptionId, isSubscribed, requestPermission, setSubscriptionEnabled } from '../lib/onesignal.js';
+import { isOnesignalEnabled, getSubscriptionId, isSubscribed, requestPermission, setSubscriptionEnabled, deviceLabel } from '../lib/onesignal.js';
 import { needsInstall, showInstallHint, isIos } from '../lib/install.js';
-
-const LABEL_UA =
-  'The Golden Ticket on ' +
-  (navigator.userAgent?.match(/Android|iPhone|iPad|Macintosh|Windows/i)?.[0] || 'browser');
 
 export default function NotifyBell() {
   const { user } = useAuth();
@@ -28,7 +24,7 @@ export default function NotifyBell() {
       setEnabled(true);
       const [optIn, subId, mine] = await Promise.all([
         isSubscribed().catch(() => false),
-        getSubscriptionId(),
+        getSubscriptionId({ retries: 4 }),
         user ? getMyDevices().catch(() => ({ devices: [] })) : { devices: [] },
       ]);
       if (!alive) return;
@@ -44,10 +40,10 @@ export default function NotifyBell() {
   if (!enabled) return null;
 
   const registerDevice = async () => {
-    const subId = await getSubscriptionId();
+    const subId = await getSubscriptionId({ retries: 6, delayMs: 400 });
     if (!subId) throw new Error('Could not find your notification ID.');
     if (user) {
-      const { ok, data } = await postNotifyDevice(subId, LABEL_UA);
+      const { ok, data } = await postNotifyDevice(subId, deviceLabel());
       if (!ok) throw new Error(data.error || 'Could not save your subscription.');
     }
     setSubscribed(true);

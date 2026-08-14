@@ -31,14 +31,26 @@ export async function permissionState() {
   }
 }
 
-export async function getSubscriptionId() {
+export function deviceLabel() {
+  const ua = navigator.userAgent || '';
+  return 'The Golden Ticket on ' + (ua.match(/Android|iPhone|iPad|Macintosh|Windows/i)?.[0] || 'browser');
+}
+
+// The subscription ID can lag a moment after permission is granted, so callers
+// can ask for a few retries. Returns null if it never appears.
+export async function getSubscriptionId({ retries = 0, delayMs = 400 } = {}) {
   const os = sdk();
   if (!os) return null;
-  try {
-    return (await os.User.getSubscriptionId()) || null;
-  } catch {
-    return null;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const id = (await os.User.getSubscriptionId()) || null;
+      if (id) return id;
+    } catch {
+      // keep waiting below
+    }
+    if (i < retries) await new Promise((r) => setTimeout(r, delayMs));
   }
+  return null;
 }
 
 export async function isSubscribed() {

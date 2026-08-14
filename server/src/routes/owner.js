@@ -9,6 +9,10 @@ import {
   validateDisplayName,
   validateBannerTagline,
   validateAnnouncements,
+  validateMessageTitle,
+  validateMessageBody,
+  validateMessageLink,
+  validateMessageImage,
 } from '../lib/validate.js';
 import { validateAvatar, validateBannerImage } from '../lib/avatars.js';
 import { publicUser } from '../lib/sanitize.js';
@@ -255,20 +259,141 @@ export function ownerRouter({ store, jellyfin, romm, mailer, secret, onesignal }
     });
   });
 
-  router.post('/owner/test-notify', ownerOnly, async (req, res) => {
+  /* ---------- messaging center ---------- */
+
+  const pushMessage = async ({ title, body, link, image, subscriptionIds }) =>
+    onesignal.notify({
+      headings: title,
+      contents: body,
+      url: link || null,
+      webImage: image || null,
+      subscriptionIds,
+    });
+
+  router.get('/owner/notify-stats', ownerOnly, async (req, res) => {
+    const active = store.users().filter((u) => u.status === 'active');
+    const devices = store.devices();
+    const ownersByDevice = new Set(devices.map((d) => d.userId));
+    const osStats = onesignal?.enabled ? await onesignal.stats() : null;
+    res.json({
+      members: active.length,
+      devices: devices.length,
+      subscribedMembers: active.filter((u) => ownersByDevice.has(u.id)).length,
+      subscribers: osStats?.messageablePlayers ?? null,
+      channelConfigured: osStats?.channelConfigured ?? false,
+    });
+  });
+
+  router.get('/owner/messages', ownerOnly, (req, res) => {
+    res.json({
+      messages: [...store.messages()].sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt))),
+    });
+  });
+
+  router.post('/owner/messages', ownerOnly, async (req, res) => {
     if (!onesignal || !onesignal.enabled) {
       return res.status(503).json({ error: 'Notifications are not configured yet.' });
     }
+    const { title, body, link, image, postBanner } = req.body || {};
+    const tErr = validateMessageTitle(title);
+    if (tErr) return res.status(400).json({ error: tErr });
+    const bErr = validateMessageBody(body);
+    if (bErr) return res.status(400).json({ error: bErr });
+    const lErr = validateMessageLink(link);
+    if (lErr) return res.status(400).json({ error: lErr });
+    const iErr = validateMessageImage(image);
+    if (iErr) return res.status(400).json({ error: iErr });
+
+    const t = String(title || '').trim();
+    const b = String(body || '').trim();
+    const u = link ? String(link).trim() : null;
+    const img = image ? String(image).trim() : null;
+    const banner = postBanner !== false;
+
+    if (banner) {
+      const list = (store.getSetting('announcements', []) || []).slice(0, 9);
+      list.unshift({ id: randomToken().slice(0, 12), title: t, body: b, enabled: true });
+      await store.setSetting('announcements', list);
+    }
+
+    const playerIds = store.activePlayerIds();
+    const msg = {
+      id: store.nextId('msg'),
+      title: t,
+      body: b,
+      link: u,
+      image: img,
+      postBanner: banner,
+      sentAt: new Date().toISOString(),
+      recipients: 0,
+      status: 'no-push',
+      note: '',
+    };
+
+    if (playerIds.length === 0) {
+      msg.note = 'No members subscribed yet — posted as a home announcement only.';
+    } else {
+      const result = await pushMessage({ title: t, body: b, link: u, image: img, subscriptionIds: playerIds });
+      msg.recipients = result.recipients ?? playerIds.length;
+      msg.status = result.ok ? 'sent' : 'failed';
+      if (!result.ok) msg.note = 'The push did not go through — check the server logs.';
+    }
+
+    await store.addMessage(msg);
+    res.status(201).json({ ok: true, message: msg });
+  });
+
+  router.post('/owner/messages/test', ownerOnly, async (req, res) => {
+    if (!onesignal || !onesignal.enabled) {
+      return res.status(503).json({ error: 'Notifications are not configured yet.' });
+    }
+    const { title, body, link, image } = req.body || {};
+    const tErr = validateMessageTitle(title);
+    if (tErr) return res.status(400).json({ error: tErr });
+    const bErr = validateMessageBody(body);
+    if (bErr) return res.status(400).json({ error: bErr });
+    const lErr = validateMessageLink(link);
+    if (lErr) return res.status(400).json({ error: lErr });
+    const iErr = validateMessageImage(image);
+    if (iErr) return res.status(400).json({ error: iErr });
+
+    const mine = store.devices().filter((d) => d.userId === req.user.id).map((d) => d.playerId);
+    if (mine.length === 0) {
+      return res.status(400).json({
+        error: 'This device isn\u2019t subscribed yet — open the Guide, tap the bell, and allow notifications first.',
+      });
+    }
+
+    const result = await pushMessage({
+      title: String(title || '').trim(),
+      body: String(body || '').trim(),
+      link: link ? String(link).trim() : null,
+      image: image ? String(image).trim() : null,
+      subscriptionIds: mine,
+    });
+    res.json({ ok: result.ok, sent: result.ok, recipients: result.recipients ?? mine.length });
+  });
+
+  router.post('/owner/messages/:id/resend', ownerOnly, async (req, res) => {
+    const msg = store.findMessage(req.params.id);
+    if (!msg) return res.status(404).json({ error: 'Message not found.' });
     const playerIds = store.activePlayerIds();
     if (playerIds.length === 0) {
       return res.status(400).json({ error: 'No members have subscribed yet — open the site, tap the bell, and allow notifications first.' });
     }
-    await onesignal.notify({
-      headings: 'Test from The Golden Ticket 🥳',
-      contents: 'This is a test notification — members will see something like this when new media is added.',
-      url: config.publicUrl,
-      subscriptionIds: playerIds,
+    const result = await pushMessage({ title: msg.title, body: msg.body, link: msg.link, image: msg.image, subscriptionIds: playerIds });
+    const updated = await store.updateMessage(msg.id, {
+      sentAt: new Date().toISOString(),
+      recipients: result.recipients ?? playerIds.length,
+      status: result.ok ? 'sent' : 'failed',
+      note: result.ok ? '' : 'The push did not go through — check the server logs.',
     });
+    res.json({ ok: true, message: updated });
+  });
+
+  router.delete('/owner/messages/:id', ownerOnly, async (req, res) => {
+    const removed = await store.removeMessage(req.params.id);
+    if (!removed) return res.status(404).json({ error: 'Message not found.' });
     res.json({ ok: true });
   });
 

@@ -55,3 +55,39 @@ export function validatePassword(password) {
   if (password.length > 128) return 'Password must be 128 characters or fewer.';
   return null;
 }
+
+export function validateMessageTitle(title) {
+  if (typeof title !== 'string' || !title.trim()) return 'Give the message a title.';
+  const t = title.trim();
+  if (t.length > 80) return 'Titles are limited to 80 characters.';
+  if (/[\u0000-\u001F\u007F]/.test(t)) return 'Title has invalid characters.';
+  return null;
+}
+
+export function validateMessageBody(body) {
+  if (typeof body !== 'string' || !body.trim()) return 'Write a short message.';
+  const b = body.trim();
+  if (b.length > 300) return 'Messages are limited to 300 characters.';
+  if (/[\u0000-\u001F\u007F]/.test(b)) return 'Message has invalid characters.';
+  return null;
+}
+
+export function validateMessageLink(link) {
+  if (link === null || link === undefined || link === '') return null;
+  if (typeof link !== 'string') return 'Link must be text.';
+  const l = link.trim();
+  if (l.length > 500) return 'Link is too long.';
+  if (!/^\/[\w/.\-?=&]*$/.test(l) && !/^https?:\/\//i.test(l)) {
+    return 'Link should start with / or http(s)://';
+  }
+  return null;
+}
+
+export function validateMessageImage(image) {
+  if (image === null || image === undefined || image === '') return null;
+  if (typeof image !== 'string') return 'Image must be a URL.';
+  const i = image.trim();
+  if (i.length > 500) return 'Image URL is too long.';
+  if (!/^https?:\/\//i.test(i)) return 'Image must be a full http(s) URL.';
+  return null;
+}

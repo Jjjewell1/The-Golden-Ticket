@@ -150,8 +150,28 @@ export async function patchOwnerSettings(payload) {
   return patchJson('/api/owner/settings', payload);
 }
 
-export function postOwnerTestNotify() {
-  return postJson('/api/owner/test-notify');
+export function getOwnerMessages() {
+  return getJson('/api/owner/messages');
+}
+
+export function getOwnerNotifyStats() {
+  return getJson('/api/owner/notify-stats');
+}
+
+export async function postOwnerMessage(payload) {
+  return postJson('/api/owner/messages', payload);
+}
+
+export async function postOwnerMessageTest(payload) {
+  return postJson('/api/owner/messages/test', payload);
+}
+
+export async function postOwnerMessageResend(id) {
+  return postJson(`/api/owner/messages/${encodeURIComponent(id)}/resend`);
+}
+
+export async function deleteOwnerMessage(id) {
+  return deleteJson(`/api/owner/messages/${encodeURIComponent(id)}`);
 }
 
 export async function getMyDevices() {

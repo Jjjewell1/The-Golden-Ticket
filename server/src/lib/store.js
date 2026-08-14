@@ -6,7 +6,7 @@ export class Store {
   constructor(dir) {
     this.dir = dir;
     this.file = path.join(dir, 'users.json');
-    this.data = { users: [], requests: [], resetTokens: [], devices: [], settings: {} };
+    this.data = { users: [], requests: [], resetTokens: [], devices: [], messages: [], settings: {} };
     this.writeQueue = Promise.resolve();
   }
 
@@ -20,6 +20,7 @@ export class Store {
           requests: Array.isArray(raw.requests) ? raw.requests : [],
           resetTokens: Array.isArray(raw.resetTokens) ? raw.resetTokens : [],
           devices: Array.isArray(raw.devices) ? raw.devices : [],
+          messages: Array.isArray(raw.messages) ? raw.messages : [],
           settings: raw.settings && typeof raw.settings === 'object' ? raw.settings : {},
         };
       } catch (err) {
@@ -144,6 +145,35 @@ export class Store {
       this.data.users.filter((u) => u.status === 'active').map((u) => u.id),
     );
     return this.data.devices.filter((d) => active.has(d.userId)).map((d) => d.playerId).filter(Boolean);
+  }
+
+  /* ---------- messages (owner messaging center history) ---------- */
+
+  messages() {
+    return this.data.messages;
+  }
+
+  findMessage(id) {
+    return this.data.messages.find((m) => m.id === id) || null;
+  }
+
+  addMessage(msg) {
+    this.data.messages.push(msg);
+    return this._save();
+  }
+
+  updateMessage(id, patch) {
+    const msg = this.findMessage(id);
+    if (!msg) return null;
+    Object.assign(msg, patch);
+    return this._save().then(() => msg);
+  }
+
+  removeMessage(id) {
+    const idx = this.data.messages.findIndex((m) => m.id === id);
+    if (idx === -1) return false;
+    this.data.messages.splice(idx, 1);
+    return this._save().then(() => true);
   }
 
   /* ---------- signup requests ---------- */
