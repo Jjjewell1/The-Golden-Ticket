@@ -105,6 +105,7 @@ body {
   color: var(--text);
   background: linear-gradient(180deg, #0b1120 0%, #16213d 45%, #1e293b 100%);
   min-height: 100vh;
+  overflow-x: hidden;
   transition: background 0.35s ease, color 0.35s ease;
 }
 
@@ -1786,6 +1787,9 @@ button.poster-card:focus-visible {
   background: rgba(10, 8, 30, 0.6);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   animation: fade-in 0.25s ease;
 }
 
@@ -4151,6 +4155,7 @@ button.rail-card-btn:focus-visible {
   gap: 10px;
   width: 100%;
   max-width: 360px;
+  min-width: 0;
   margin: 20px auto 0;
   padding: 10px 12px;
   border-radius: 16px;
@@ -4374,6 +4379,7 @@ button.rail-card-btn:focus-visible {
     gap: 18px;
     padding: 22px;
     max-height: 88vh;
+    max-height: 82dvh;
   }
 
   .modal-poster {
