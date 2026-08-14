@@ -4144,6 +4144,76 @@ button.rail-card-btn:focus-visible {
   margin-top: 16px;
 }
 
+.install-focus-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 360px;
+  margin: 16px auto 0;
+  padding: 14px 16px;
+  border: none;
+  border-radius: 16px;
+  background: var(--grad-a);
+  box-shadow: 0 10px 26px var(--glow);
+  color: #0f172a;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.25s var(--ease-bounce), box-shadow 0.25s;
+}
+
+.install-focus-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 16px 36px var(--glow);
+}
+
+.install-focus-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.install-focus-icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.install-focus-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.install-focus-text strong {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.install-focus-text small {
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(15, 23, 42, 0.75);
+}
+
+.install-focus-tip {
+  margin: 12px auto 0;
+  max-width: 360px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.install-focus-tip strong {
+  color: var(--text);
+}
+
 .signup-notify-hint {
   margin-top: 8px;
 }
@@ -4678,10 +4748,6 @@ button.rail-card-btn:focus-visible {
 .install-steps-dots span[data-on='true'] {
   width: 22px;
   background: var(--grad-a);
-}
-
-.install-share-fallback {
-  align-self: flex-start;
 }
 
 .install-manual-toggle {

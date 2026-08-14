@@ -33,24 +33,6 @@ function ShareGlyph() {
   );
 }
 
-function SafariBar({ onShare }) {
-  return (
-    <div className="device-bar">
-      <span className="device-ctl">‹</span>
-      <span className="device-ctl">›</span>
-      <span className="device-url">
-        <span className="device-lock">🔒</span>
-        <span className="device-url-text">goldenticket.jewellcore.com</span>
-      </span>
-      <button type="button" className="device-ctl device-share" onClick={onShare} aria-label="Tap the Share button">
-        <ShareGlyph />
-      </button>
-      <span className="device-ctl">≡</span>
-      <span className="device-pointer" aria-hidden="true">↑</span>
-    </div>
-  );
-}
-
 function AndroidBar({ onMenu }) {
   const browser = androidBrowser();
   const glyph = browser === 'edge' ? '⊕' : '⋮';
@@ -238,55 +220,55 @@ export default function InstallHint() {
         {iosMode ? (
           <div className="ios-guide">
             <p className="notify-prompt-text">
-              On iPhone and iPad you add the site to your Home Screen first. A few quick taps:
+              On iPhone and iPad you add the site to your Home Screen from the Share menu:
             </p>
 
-            {step === 0 && (
-              <div className="ios-step">
-                <strong className="ios-step-title">Step 1 — tap Share</strong>
-                <SafariBar onShare={next} />
-                <p className="ios-tip">
-                  The square with the up arrow, at the bottom of your browser. Tap it to open the menu.
-                </p>
-                {canShareSheet() && (
-                  <button type="button" className="btn btn-ghost btn-small install-share-fallback" onClick={openShareSheet}>
-                    Can&apos;t find it? Try opening the share sheet
-                  </button>
-                )}
+            {canShareSheet() ? (
+              <button
+                type="button"
+                className="install-focus-btn"
+                onClick={openShareSheet}
+                aria-label="Open your iPhone's Share menu"
+              >
+                <span className="install-focus-icon">
+                  <ShareGlyph />
+                </span>
+                <span className="install-focus-text">
+                  <strong>Add to Home Screen</strong>
+                  <small>Tap to open your iPhone&apos;s Share menu</small>
+                </span>
+              </button>
+            ) : (
+              <div className="install-focus-tip">
+                Open The Golden Ticket in <strong>Safari</strong>, then tap <strong>Share</strong> — the
+                square with the ↑ arrow.
               </div>
             )}
 
-            {step === 1 && (
-              <div className="ios-step">
-                <strong className="ios-step-title">Step 2 — choose &quot;Add to Home Screen&quot;</strong>
-                <SheetMock rows={IOS_SHEET_ROWS} onHot={next} />
-                <p className="ios-tip">Scroll down a bit if you don&apos;t see it right away, then tap it.</p>
-              </div>
-            )}
+            <div className="install-focus-tip">
+              In the menu that opens, look for <strong>Add to Home Screen</strong> and tap it.
+            </div>
 
-            {step === 2 && (
-              <div className="ios-step">
-                <strong className="ios-step-title">Step 3 — open the app</strong>
-                <HomeIconMock />
-                <p className="ios-tip">
-                  Tap its icon on your Home Screen to open it full-screen, then tap the 🔔 bell on the Guide to
-                  allow notifications.
-                </p>
-              </div>
-            )}
+            <div className="ios-step">
+              <strong className="ios-step-title">Look for this and tap it</strong>
+              <SheetMock rows={IOS_SHEET_ROWS} />
+              <p className="ios-tip">
+                On some iPhones it&apos;s under the <strong>⋯ More</strong> button at the end of the row.
+              </p>
+            </div>
 
-            <StepDots step={step} />
+            <div className="ios-step">
+              <strong className="ios-step-title">Then open it like an app</strong>
+              <HomeIconMock />
+              <p className="ios-tip">
+                Tap the 🎫 icon on your Home Screen, then tap the 🔔 bell on the Guide to allow
+                notifications.
+              </p>
+            </div>
+
             <div className="notify-prompt-actions">
-              {step > 0 && (
-                <button type="button" className="btn btn-ghost" onClick={() => setStep((s) => s - 1)}>
-                  Back
-                </button>
-              )}
               <button type="button" className="btn btn-ghost" onClick={dismiss}>
                 Not now
-              </button>
-              <button type="button" className="btn btn-gold" onClick={() => (step < 2 ? next() : dismiss())}>
-                {step < 2 ? 'Next' : "I've added it"}
               </button>
             </div>
           </div>
