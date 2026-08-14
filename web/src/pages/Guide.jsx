@@ -1,5 +1,6 @@
 import { guideContent } from '../config/content.js';
 import NotifyBell from '../components/NotifyBell.jsx';
+import InstallButton from '../components/InstallButton.jsx';
 
 export default function Guide() {
   return (
@@ -26,6 +27,7 @@ export default function Guide() {
       </div>
 
       <NotifyBell />
+      <InstallButton className="install-guide-button" />
     </div>
   );
 }

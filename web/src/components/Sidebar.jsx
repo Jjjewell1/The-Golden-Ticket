@@ -4,6 +4,7 @@ import { TicketLogo } from './Ticket.jsx';
 import ClockWidget from './ClockWidget.jsx';
 import WeatherWidget from './WeatherWidget.jsx';
 import Avatar from './Avatar.jsx';
+import InstallButton from './InstallButton.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { getSessions, getRequestCount, getStatus, posterUrl, movieHref } from '../lib/api.js';
 
@@ -80,6 +81,10 @@ export default function Sidebar({ open, onClose }) {
             </NavLink>
           ))}
         </nav>
+
+        <div className="sidebar-install">
+          <InstallButton onClick={onClose} />
+        </div>
 
         <div className="sidebar-widgets">
           <ClockWidget />
