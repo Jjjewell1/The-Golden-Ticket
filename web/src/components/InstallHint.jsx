@@ -5,7 +5,6 @@ import {
   isStandalone,
   detectDevice,
   androidBrowser,
-  canShareSheet,
   getDeferredPrompt,
   consumeDeferredPrompt,
 } from '../lib/install.js';
@@ -155,18 +154,6 @@ export default function InstallHint() {
 
   const next = () => setStep((s) => Math.min(s + 1, 2));
 
-  const openShareSheet = async () => {
-    try {
-      await navigator.share({
-        title: document.title,
-        text: 'The Golden Ticket — movies, shows & games for the family',
-        url: window.location.href,
-      });
-    } catch {
-      // user cancelled — the guide stays up
-    }
-  };
-
   if (nudge) {
     return (
       <div className="modal" role="dialog" aria-modal="true" aria-label="Welcome to the app">
@@ -220,37 +207,30 @@ export default function InstallHint() {
         {iosMode ? (
           <div className="ios-guide">
             <p className="notify-prompt-text">
-              On iPhone and iPad you add the site to your Home Screen from the Share menu:
+              Tap the <strong>Share</strong> button in Safari — the square with the up arrow at the
+              bottom of your screen:
             </p>
 
-            {canShareSheet() ? (
-              <button
-                type="button"
-                className="install-focus-btn"
-                onClick={openShareSheet}
-                aria-label="Open your iPhone's Share menu"
-              >
-                <span className="install-focus-icon">
-                  <ShareGlyph />
-                </span>
-                <span className="install-focus-text">
-                  <strong>Add to Home Screen</strong>
-                  <small>Tap to open your iPhone&apos;s Share menu</small>
-                </span>
-              </button>
-            ) : (
-              <div className="install-focus-tip">
-                Open The Golden Ticket in <strong>Safari</strong>, then tap <strong>Share</strong> — the
-                square with the ↑ arrow.
-              </div>
-            )}
-
-            <div className="install-focus-tip">
-              In the menu that opens, look for <strong>Add to Home Screen</strong> and tap it.
+            <div className="safari-toolbar" aria-hidden="true">
+              <span className="safari-ctl">‹</span>
+              <span className="safari-ctl">›</span>
+              <span className="safari-url">
+                <span className="device-lock">🔒</span>
+                <span className="device-url-text">goldenticket.jewellcore.com</span>
+              </span>
+              <span className="safari-share">
+                <ShareGlyph />
+                <span className="safari-share-arrow">↑</span>
+              </span>
+              <span className="safari-tabs">
+                <span></span>
+                <span></span>
+              </span>
+              <span className="safari-ctl">☰</span>
             </div>
 
             <div className="ios-step">
-              <strong className="ios-step-title">Look for this and tap it</strong>
+              <strong className="ios-step-title">Then tap &quot;Add to Home Screen&quot;</strong>
               <SheetMock rows={IOS_SHEET_ROWS} />
               <p className="ios-tip">
                 On some iPhones it&apos;s under the <strong>⋯ More</strong> button at the end of the row.
