@@ -39,7 +39,8 @@ function SafariBar({ onShare }) {
       <span className="device-ctl">‹</span>
       <span className="device-ctl">›</span>
       <span className="device-url">
-        <span className="device-lock">🔒</span>goldenticket.jewellcore.com
+        <span className="device-lock">🔒</span>
+        <span className="device-url-text">goldenticket.jewellcore.com</span>
       </span>
       <button type="button" className="device-ctl device-share" onClick={onShare} aria-label="Tap the Share button">
         <ShareGlyph />
@@ -57,7 +58,8 @@ function AndroidBar({ onMenu }) {
   return (
     <div className="device-bar device-bar-android">
       <span className="device-url">
-        <span className="device-lock">🔒</span>goldenticket.jewellcore.com
+        <span className="device-lock">🔒</span>
+        <span className="device-url-text">goldenticket.jewellcore.com</span>
       </span>
       <button type="button" className="device-ctl device-share" onClick={onMenu} aria-label={aria}>
         {glyph}
