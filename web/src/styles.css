@@ -4080,6 +4080,78 @@ button.rail-card-btn:focus-visible {
   margin-top: 20px;
 }
 
+/* ---------- install hint (PWA / Add to Home Screen popup) ---------- */
+
+.install-hint {
+  text-align: center;
+}
+
+.install-hint .notify-card-icon {
+  margin: 0 auto 6px;
+}
+
+.install-steps {
+  margin: 16px auto 0;
+  padding: 0;
+  max-width: 360px;
+  list-style: none;
+  counter-reset: step;
+  text-align: left;
+  display: grid;
+  gap: 10px;
+}
+
+.install-steps li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 34px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.install-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.install-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 12px;
+}
+
+.install-hint-action {
+  margin-top: 16px;
+}
+
+.signup-notify-hint {
+  margin-top: 8px;
+}
+
+.signup-notify-hint a {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 /* ---------- responsive ---------- */
 
 @media (max-width: 1020px) {

@@ -4,7 +4,7 @@ import { config } from '../config.js';
 import { requireAuth } from '../lib/session.js';
 import { AVATAR_PALETTE } from '../lib/avatars.js';
 
-export function apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret, pushover, ntfy }) {
+export function apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret, pushover, onesignal }) {
   const router = Router();
   const protectedRouter = Router();
   const cache = createTtlCache(config.cacheTtlMs);
@@ -26,7 +26,7 @@ export function apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret, pu
       banner: store.getSetting('banner', null),
       ownerPinSet: !!config.ownerPin,
       avatars: AVATAR_PALETTE,
-      notify: ntfy?.enabled ? { subscribeUrl: ntfy.subscribeUrl } : null,
+      notify: onesignal?.enabled ? { provider: 'onesignal', appId: onesignal.appId } : null,
     });
   });
 
@@ -211,6 +211,39 @@ export function apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret, pu
       res.status(500).json({ error: err.message });
     }
   });
+
+  /* ---------- push device registry (OneSignal subscriptions) ---------- */
+
+  protectedGet('/notify/devices', async (req, res) => {
+    const devices = store
+      .devices()
+      .filter((d) => d.userId === req.user.id)
+      .map((d) => ({ playerId: d.playerId, label: d.label, lastSeenAt: d.lastSeenAt }));
+    res.json({ devices });
+  });
+
+  protectedRouter.post('/notify/device', auth, async (req, res) => {
+    const playerId = String(req.body?.playerId || '').trim();
+    if (!playerId || playerId.length > 64) {
+      return res.status(400).json({ error: 'A valid player ID is required.' });
+    }
+    const label = String(req.body?.label || '').slice(0, 120);
+    await store.addDevice({ userId: req.user.id, playerId, label });
+    res.json({ ok: true });
+  });
+
+  protectedRouter.delete('/notify/device/:playerId', auth, async (req, res) => {
+    const playerId = String(req.params.playerId || '');
+    const device = store.findDevice(playerId);
+    if (!device) return res.status(404).json({ error: 'Device not found.' });
+    if (device.userId !== req.user.id && req.user.role !== 'owner') {
+      return res.status(403).json({ error: 'Not your device.' });
+    }
+    await store.removeDevice(playerId);
+    res.json({ ok: true });
+  });
+
+  router.use(protectedRouter);
 
   protectedGet('/status', async (req, res) => {
     const results = await Promise.allSettled([

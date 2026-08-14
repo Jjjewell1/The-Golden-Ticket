@@ -1,9 +1,9 @@
-// Polls Jellyfin + RomM for newly-added media and pings members via ntfy.
+// Polls Jellyfin + RomM for newly-added media and pings members via OneSignal.
 // "Last seen" IDs are stored in the store settings so restarts don't re-notify,
 // and the very first poll snapshots the library without notifying (avoids spam
 // on a fresh deploy).
 
-const LAST_SEEN_KEY = 'ntfyLastSeen';
+const LAST_SEEN_KEY = 'mediaLastSeen';
 const POLL_INTERVAL_MS = 15 * 60 * 1000;
 const TITLE_LIMIT = 5;
 
@@ -19,9 +19,9 @@ function fmtList(items, limit = TITLE_LIMIT) {
 
 const KIND_LABEL = { movie: '🎬 Movies', series: '📺 Shows', game: '🕹️ Games' };
 
-export function startBroadcaster({ ntfy, jellyfin, romm, store, publicUrl, intervalMs = POLL_INTERVAL_MS }) {
-  if (!ntfy.enabled) {
-    console.log('[broadcast] ntfy not configured — new-media notifications disabled');
+export function startBroadcaster({ onesignal, jellyfin, romm, store, publicUrl, intervalMs = POLL_INTERVAL_MS }) {
+  if (!onesignal.enabled) {
+    console.log('[broadcast] OneSignal not configured — new-media notifications disabled');
     return () => {};
   }
 
@@ -67,11 +67,11 @@ export function startBroadcaster({ ntfy, jellyfin, romm, store, publicUrl, inter
 
       if (fresh.length) {
         const lines = fresh.map(({ kind, items }) => `${KIND_LABEL[kind] || kind}: ${fmtList(items)}`);
-        await ntfy.notify({
-          title: 'Fresh in the library ✨',
-          message: lines.join('\n'),
-          tags: ['tada'],
-          click: publicUrl ? `${publicUrl}/recently-added` : null,
+        await onesignal.notify({
+          headings: 'Fresh in the library ✨',
+          contents: lines.join('\n'),
+          url: publicUrl ? `${publicUrl}/recently-added` : null,
+          subscriptionIds: store.activePlayerIds(),
         });
       }
 

@@ -6,7 +6,7 @@ export class Store {
   constructor(dir) {
     this.dir = dir;
     this.file = path.join(dir, 'users.json');
-    this.data = { users: [], requests: [], resetTokens: [], settings: {} };
+    this.data = { users: [], requests: [], resetTokens: [], devices: [], settings: {} };
     this.writeQueue = Promise.resolve();
   }
 
@@ -19,6 +19,7 @@ export class Store {
           users: Array.isArray(raw.users) ? raw.users : [],
           requests: Array.isArray(raw.requests) ? raw.requests : [],
           resetTokens: Array.isArray(raw.resetTokens) ? raw.resetTokens : [],
+          devices: Array.isArray(raw.devices) ? raw.devices : [],
           settings: raw.settings && typeof raw.settings === 'object' ? raw.settings : {},
         };
       } catch (err) {
@@ -87,7 +88,62 @@ export class Store {
     const idx = this.data.users.findIndex((x) => x.id === id);
     if (idx === -1) return null;
     const [user] = this.data.users.splice(idx, 1);
+    this.data.devices = this.data.devices.filter((d) => d.userId !== id);
     return this._save().then(() => user);
+  }
+
+  /* ---------- push devices (OneSignal subscriptions) ---------- */
+
+  devices() {
+    return this.data.devices;
+  }
+
+  findDevice(playerId) {
+    return this.data.devices.find((d) => d.playerId === playerId) || null;
+  }
+
+  addDevice({ userId, playerId, label = '' }) {
+    const existing = this.findDevice(playerId);
+    if (existing) {
+      existing.userId = userId;
+      existing.label = label || existing.label;
+      existing.lastSeenAt = new Date().toISOString();
+    } else {
+      this.data.devices.push({
+        userId,
+        playerId,
+        label: label || '',
+        createdAt: new Date().toISOString(),
+        lastSeenAt: new Date().toISOString(),
+      });
+    }
+    return this._save();
+  }
+
+  removeDevice(playerId) {
+    const idx = this.data.devices.findIndex((d) => d.playerId === playerId);
+    if (idx === -1) return false;
+    this.data.devices.splice(idx, 1);
+    return this._save().then(() => true);
+  }
+
+  removeDevicesForUser(userId) {
+    const before = this.data.devices.length;
+    this.data.devices = this.data.devices.filter((d) => d.userId !== userId);
+    if (this.data.devices.length === before) return Promise.resolve();
+    return this._save();
+  }
+
+  allPlayerIds() {
+    return this.data.devices.map((d) => d.playerId).filter(Boolean);
+  }
+
+  // Player IDs belonging to active accounts only (skips deleted/disabled users).
+  activePlayerIds() {
+    const active = new Set(
+      this.data.users.filter((u) => u.status === 'active').map((u) => u.id),
+    );
+    return this.data.devices.filter((d) => active.has(d.userId)).map((d) => d.playerId).filter(Boolean);
   }
 
   /* ---------- signup requests ---------- */

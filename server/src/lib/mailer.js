@@ -1,10 +1,9 @@
 import nodemailer from 'nodemailer';
 
 export class Mailer {
-  constructor(cfg, ntfy = null) {
+  constructor(cfg) {
     this.cfg = cfg;
     this.dry = !!cfg.dry;
-    this.subscribeUrl = ntfy && ntfy.enabled ? ntfy.subscribeUrl : null;
     this.transport = this.dry
       ? null
       : nodemailer.createTransport({
@@ -43,11 +42,6 @@ export class Mailer {
     }
   }
 
-  _notifyLine() {
-    if (!this.subscribeUrl) return null;
-    return `Want a ping when new movies, shows, or games arrive? Grab the free <strong>ntfy</strong> app and subscribe: <a href="${this.subscribeUrl}" style="color:#7c3aed">${this.subscribeUrl}</a>`;
-  }
-
   _shell(title, bodyLines) {
     const link = this.cfg.publicUrl;
     return `
@@ -70,7 +64,6 @@ export class Mailer {
       this._shell('Welcome aboard!', [
         `Your username is <strong>${user.username}</strong> and your account is active.`,
         'Head to the site and sign in with the username and password you chose.',
-        this._notifyLine(),
       ]),
     );
   }
@@ -82,7 +75,6 @@ export class Mailer {
       this._shell('You got your ticket!', [
         `Your username is <strong>${user.username}</strong>.`,
         'Sign in below with the username and password you picked at signup — everything is ready to go.',
-        this._notifyLine(),
       ]),
     );
   }

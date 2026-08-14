@@ -157,6 +157,10 @@ export const config = {
     topic: env.NTFY_TOPIC || '',
     auth: env.NTFY_AUTH || '',
   },
+  onesignal: {
+    appId: env.ONESIGNAL_APP_ID || '',
+    restApiKey: env.ONESIGNAL_REST_API_KEY || '',
+  },
   ticketCode: env.TICKET_CODE || '',
   ownerPin: env.OWNER_PIN || '',
   ownerAccount: (env.OWNER_ACCOUNT || '').toLowerCase(),

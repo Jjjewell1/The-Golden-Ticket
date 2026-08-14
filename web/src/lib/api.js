@@ -28,6 +28,12 @@ async function patchJson(path, payload) {
   return { ok: res.ok, status: res.status, data };
 }
 
+async function deleteJson(path) {
+  const res = await fetch(path, { method: 'DELETE' });
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data };
+}
+
 export function getConfig() {
   return getJson('/api/config');
 }
@@ -146,6 +152,18 @@ export async function patchOwnerSettings(payload) {
 
 export function postOwnerTestNotify() {
   return postJson('/api/owner/test-notify');
+}
+
+export async function getMyDevices() {
+  return getJson('/api/notify/devices');
+}
+
+export async function postNotifyDevice(playerId, label) {
+  return postJson('/api/notify/device', { playerId, label });
+}
+
+export async function deleteNotifyDevice(playerId) {
+  return deleteJson(`/api/notify/device/${encodeURIComponent(playerId)}`);
 }
 
 export async function verifyOwnerPin(pin) {

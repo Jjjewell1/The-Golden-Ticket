@@ -15,7 +15,7 @@ import { publicUser } from '../lib/sanitize.js';
 import { provision } from '../services/provision.js';
 import { decideRequest } from '../services/decide.js';
 
-export function ownerRouter({ store, jellyfin, romm, mailer, secret, ntfy }) {
+export function ownerRouter({ store, jellyfin, romm, mailer, secret, onesignal }) {
   const router = Router();
   const ownerOnly = requireOwner({ store, secret });
 
@@ -234,16 +234,16 @@ export function ownerRouter({ store, jellyfin, romm, mailer, secret, ntfy }) {
       Object.entries(patch).map(([k, v]) => store.setSetting(k, v)),
     );
 
-    if (ntfy?.enabled && 'announcements' in patch) {
+    if (onesignal?.enabled && 'announcements' in patch) {
       const prev = Array.isArray(prevAnnouncements) ? prevAnnouncements : [];
       const prevIds = new Set(prev.map((a) => a && a.id));
       const fresh = (patch.announcements || []).filter((a) => a.enabled && !prevIds.has(a.id));
       for (const a of fresh) {
-        await ntfy.notify({
-          title: '📣 New announcement',
-          message: a.title + (a.body ? ` — ${a.body}` : ''),
-          tags: ['megaphone'],
-          click: config.publicUrl,
+        await onesignal.notify({
+          headings: '📣 New announcement',
+          contents: a.title + (a.body ? ` — ${a.body}` : ''),
+          url: config.publicUrl,
+          subscriptionIds: store.activePlayerIds(),
         });
       }
     }
@@ -256,14 +256,18 @@ export function ownerRouter({ store, jellyfin, romm, mailer, secret, ntfy }) {
   });
 
   router.post('/owner/test-notify', ownerOnly, async (req, res) => {
-    if (!ntfy || !ntfy.enabled) {
+    if (!onesignal || !onesignal.enabled) {
       return res.status(503).json({ error: 'Notifications are not configured yet.' });
     }
-    await ntfy.notify({
-      title: 'Test from The Golden Ticket 🥳',
-      message: 'This is a test notification — members will see something like this when new media is added.',
-      tags: ['test_tube'],
-      click: config.publicUrl,
+    const playerIds = store.activePlayerIds();
+    if (playerIds.length === 0) {
+      return res.status(400).json({ error: 'No members have subscribed yet — open the site, tap the bell, and allow notifications first.' });
+    }
+    await onesignal.notify({
+      headings: 'Test from The Golden Ticket 🥳',
+      contents: 'This is a test notification — members will see something like this when new media is added.',
+      url: config.publicUrl,
+      subscriptionIds: playerIds,
     });
     res.json({ ok: true });
   });

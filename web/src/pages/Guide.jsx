@@ -1,5 +1,5 @@
 import { guideContent } from '../config/content.js';
-import NotifyCard from '../components/NotifyCard.jsx';
+import NotifyBell from '../components/NotifyBell.jsx';
 
 export default function Guide() {
   return (
@@ -25,7 +25,7 @@ export default function Guide() {
         ))}
       </div>
 
-      <NotifyCard />
+      <NotifyBell />
     </div>
   );
 }

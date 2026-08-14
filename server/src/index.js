@@ -6,7 +6,7 @@ import { config } from './config.js';
 import { Store } from './lib/store.js';
 import { Mailer } from './lib/mailer.js';
 import { Pushover } from './lib/pushover.js';
-import { Ntfy } from './lib/ntfy.js';
+import { OneSignal } from './lib/onesignal.js';
 import { hashPassword } from './lib/crypto.js';
 import { Jellyfin } from './services/jellyfin.js';
 import { Romm } from './services/romm.js';
@@ -28,9 +28,9 @@ const jellyfin = new Jellyfin(config.jellyfin);
 const romm = new Romm(config.romm);
 const seerr = new Seerr(config.seerr);
 const linkwarden = new Linkwarden(config.linkwarden);
-const mailer = new Mailer(config.smtp, new Ntfy(config.ntfy));
+const mailer = new Mailer(config.smtp);
 const pushover = new Pushover(config.pushover);
-const ntfy = new Ntfy(config.ntfy);
+const onesignal = new OneSignal(config.onesignal);
 
 (function seedOwner() {
   const ownerExists = store.users().some((u) => u.role === 'owner');
@@ -57,10 +57,10 @@ const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '100kb' }));
 
-app.use('/api', apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret: config.sessionSecret, pushover, ntfy }));
+app.use('/api', apiRouter({ jellyfin, romm, seerr, linkwarden, store, secret: config.sessionSecret, pushover, onesignal }));
 app.use('/api', signupRouter({ jellyfin, romm, store, mailer, pushover }));
 app.use('/api', authRouter({ store, jellyfin, romm, mailer, secret: config.sessionSecret, config }));
-app.use('/api', ownerRouter({ store, jellyfin, romm, mailer, secret: config.sessionSecret, ntfy }));
+app.use('/api', ownerRouter({ store, jellyfin, romm, mailer, secret: config.sessionSecret, onesignal }));
 app.use('/', approveRouter({ store, secret: config.sessionSecret }));
 app.use('/', resetRouter({ store }));
 app.use('/', ogRouter({ jellyfin, romm }));
@@ -110,7 +110,7 @@ app.listen(config.port, '0.0.0.0', () => {
 });
 
 startBroadcaster({
-  ntfy,
+  onesignal,
   jellyfin,
   romm,
   store,
