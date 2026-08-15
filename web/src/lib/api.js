@@ -90,6 +90,10 @@ export async function postLogin(payload) {
   return postJson('/api/auth/login', payload);
 }
 
+export async function postLoginPin(payload) {
+  return postJson('/api/auth/pin', payload);
+}
+
 export async function postLogout() {
   return postJson('/api/auth/logout');
 }

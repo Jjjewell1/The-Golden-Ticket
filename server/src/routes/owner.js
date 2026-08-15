@@ -13,6 +13,7 @@ import {
   validateMessageBody,
   validateMessageLink,
   validateMessageImage,
+  validatePin,
 } from '../lib/validate.js';
 import { validateAvatar, validateBannerImage } from '../lib/avatars.js';
 import { publicUser } from '../lib/sanitize.js';
@@ -143,7 +144,7 @@ export function ownerRouter({ store, jellyfin, romm, mailer, secret, onesignal }
     if (!user) return res.status(404).json({ error: 'User not found.' });
 
     const body = req.body || {};
-    const keys = ['displayName', 'avatar', 'email', 'password'].filter((k) => k in body);
+    const keys = ['displayName', 'avatar', 'email', 'password', 'pin'].filter((k) => k in body);
     if (keys.length === 0) return res.status(400).json({ error: 'Nothing to update.' });
 
     const nErr = validateDisplayName(body.displayName);
@@ -163,6 +164,10 @@ export function ownerRouter({ store, jellyfin, romm, mailer, secret, onesignal }
       const pErr = validatePassword(body.password);
       if (pErr) return res.status(400).json({ error: pErr });
     }
+    if (keys.includes('pin')) {
+      const pErr = validatePin(body.pin);
+      if (pErr) return res.status(400).json({ error: pErr });
+    }
 
     const patch = {};
     if (keys.includes('displayName')) {
@@ -170,6 +175,10 @@ export function ownerRouter({ store, jellyfin, romm, mailer, secret, onesignal }
     }
     if (keys.includes('avatar')) patch.avatar = body.avatar || '';
     if (keys.includes('email')) patch.email = body.email.trim().toLowerCase();
+    if (keys.includes('pin')) {
+      const p = typeof body.pin === 'string' ? body.pin.trim() : '';
+      patch.pinHash = p ? hashPassword(p) : null;
+    }
 
     let synced = [];
     if (keys.includes('password')) {

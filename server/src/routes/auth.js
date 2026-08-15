@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { hashPassword, verifyPassword } from '../lib/crypto.js';
 import { createSessionCookie, clearSessionCookie, requireAuth } from '../lib/session.js';
 import { createRateLimiter } from '../lib/ratelimit.js';
-import { validatePassword, validateDisplayName } from '../lib/validate.js';
+import { validatePassword, validateDisplayName, validatePin } from '../lib/validate.js';
 import { validateAvatar } from '../lib/avatars.js';
 import { publicUser } from '../lib/sanitize.js';
 
@@ -47,14 +47,43 @@ export function authRouter({ store, jellyfin, romm, mailer, secret, config }) {
   router.get('/auth/profiles', (req, res) => {
     const profiles = store
       .users()
-      .filter((u) => u.status === 'active')
+      .filter((u) => u.status === 'active' && u.role !== 'owner')
       .map((u) => ({
         id: u.id,
         username: u.username,
         displayName: u.displayName || null,
         avatar: u.avatar || null,
+        hasPin: !!u.pinHash,
       }));
     res.json({ profiles });
+  });
+
+  router.post('/auth/pin', (req, res) => {
+    const { userId, pin } = req.body || {};
+    if (!userId) return res.status(400).json({ error: 'Pick a profile first.' });
+
+    const user = store.findUserById(String(userId));
+    if (!user || user.status !== 'active' || user.role === 'owner') {
+      return res.status(401).json({ error: 'That profile is not available.' });
+    }
+
+    const key = `${req.ip}:${user.id}`;
+    if (loginLimiter.check(key)) {
+      return res.status(429).json({ error: 'Too many attempts. Try again in 15 minutes.' });
+    }
+    loginLimiter.note(key);
+
+    const provided = String(pin || '').trim();
+    if (provided) {
+      if (!user.pinHash || !verifyPassword(provided, user.pinHash)) {
+        return res.status(401).json({ error: 'That PIN is not right.' });
+      }
+    } else if (user.pinHash) {
+      return res.status(401).json({ error: 'Enter this profile\u2019s PIN.' });
+    }
+
+    res.setHeader('Set-Cookie', createSessionCookie(user, secret));
+    res.json({ user: withNotifyPrompt(user, config) });
   });
 
   router.get('/auth/me', auth, (req, res) => {
@@ -63,14 +92,16 @@ export function authRouter({ store, jellyfin, romm, mailer, secret, config }) {
 
   router.patch('/auth/me', auth, (req, res) => {
     const body = req.body || {};
-    const { displayName, avatar, notifyPromptSeen } = body;
-    if (!('displayName' in body) && !('avatar' in body) && !('notifyPromptSeen' in body)) {
+    const { displayName, avatar, notifyPromptSeen, pin } = body;
+    if (!('displayName' in body) && !('avatar' in body) && !('notifyPromptSeen' in body) && !('pin' in body)) {
       return res.status(400).json({ error: 'Nothing to update.' });
     }
     const nErr = validateDisplayName(displayName);
     if (nErr) return res.status(400).json({ error: nErr });
     const aErr = validateAvatar(avatar);
     if (aErr) return res.status(400).json({ error: aErr });
+    const pErr = validatePin(pin);
+    if (pErr) return res.status(400).json({ error: pErr });
 
     const patch = {};
     if ('displayName' in body) {
@@ -81,6 +112,10 @@ export function authRouter({ store, jellyfin, romm, mailer, secret, config }) {
     }
     if ('notifyPromptSeen' in body) {
       patch.notifyPromptSeen = notifyPromptSeen === true;
+    }
+    if ('pin' in body) {
+      const p = typeof pin === 'string' ? pin.trim() : '';
+      patch.pinHash = p ? hashPassword(p) : null;
     }
     store.updateUser(req.user.id, patch).then((user) => {
       res.json({ ok: true, user: withNotifyPrompt(user, config) });

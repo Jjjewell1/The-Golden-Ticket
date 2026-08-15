@@ -101,6 +101,7 @@ export default function Owner() {
       email: editing.email.trim(),
     };
     if (editing.password) payload.password = editing.password;
+    if (editing.pinTouched) payload.pin = editing.pin ?? '';
     const res = await patchOwnerUser(editing.id, payload);
     setBusyId(null);
     if (!res.ok) {
@@ -255,7 +256,7 @@ export default function Owner() {
                               type="button"
                               className="btn btn-small btn-ghost"
                               disabled={busyId === user.id}
-                              onClick={() => setEditing({ id: user.id, username: user.username, displayName: user.displayName || '', email: user.email || '', password: '' })}
+                              onClick={() => setEditing({ id: user.id, username: user.username, displayName: user.displayName || '', email: user.email || '', password: '', pin: '', pinTouched: false, hasPin: !!user.hasPin })}
                             >
                               Edit
                             </button>
@@ -364,6 +365,25 @@ export default function Owner() {
                 <p className="field-hint">
                   The password is synced to Jellyfin and RomM. Leave it blank to only update the email.
                 </p>
+                <label className="field">
+                  <span className="field-label">
+                    PIN {editing.hasPin ? '(currently set)' : '(none)'}
+                  </span>
+                  <input
+                    type="password"
+                    className="pin-field"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    maxLength={4}
+                    value={editing.pin ?? ''}
+                    placeholder="4 digits, e.g. 1234"
+                    onChange={(e) => setEditing({ ...editing, pin: e.target.value.replace(/\D/g, '').slice(0, 4), pinTouched: true })}
+                  />
+                  <span className="field-hint">
+                    Site-only sign-in PIN — not synced to Jellyfin or RomM. Leave blank to keep it; a member with no PIN taps their profile to get straight in.
+                  </span>
+                </label>
                 <div className="mgmt-side mgmt-footer">
                   <button type="button" className="btn btn-ghost" disabled={busyId === editing.id} onClick={() => setEditing(null)}>
                     Cancel

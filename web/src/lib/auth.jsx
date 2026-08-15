@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { getMe, postLogin, postLogout, patchMe } from './api.js';
+import { getMe, postLogin, postLoginPin, postLogout, patchMe } from './api.js';
 
 const AuthContext = createContext(null);
 
@@ -29,6 +29,13 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  const loginPin = useCallback(async (userId, pin = '') => {
+    const { ok, data } = await postLoginPin({ userId, pin });
+    if (!ok) throw new Error(data.error || 'That PIN is not right.');
+    setUser(data.user);
+    return data.user;
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await postLogout();
@@ -46,7 +53,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, loading, login, loginPin, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

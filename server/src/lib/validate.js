@@ -56,6 +56,14 @@ export function validatePassword(password) {
   return null;
 }
 
+export function validatePin(pin) {
+  if (pin === null || pin === undefined || pin === '') return null;
+  if (typeof pin !== 'string') return 'PIN must be 4 digits.';
+  const p = pin.trim();
+  if (!/^\d{4}$/.test(p)) return 'PIN must be exactly 4 digits.';
+  return null;
+}
+
 export function validateMessageTitle(title) {
   if (typeof title !== 'string' || !title.trim()) return 'Give the message a title.';
   const t = title.trim();

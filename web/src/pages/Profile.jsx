@@ -9,6 +9,8 @@ export default function Profile() {
   const [palette, setPalette] = useState([]);
   const [displayName, setDisplayName] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [pinEnabled, setPinEnabled] = useState(false);
+  const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -17,8 +19,10 @@ export default function Profile() {
     if (user) {
       setDisplayName(user.displayName || '');
       setAvatar(user.avatar || '');
+      setPinEnabled(!!user.hasPin);
+      setPin('');
     }
-  }, [user?.id]);
+  }, [user?.id, user?.hasPin]);
 
   useEffect(() => {
     getConfig()
@@ -31,8 +35,23 @@ export default function Profile() {
     setBusy(true);
     setSaved(false);
     setError('');
+
+    const patch = { displayName: displayName.trim(), avatar };
+    if (pinEnabled) {
+      if (pin.length === 4) {
+        patch.pin = pin;
+      } else if (!user.hasPin) {
+        setError('Choose a 4-digit PIN to turn on PIN sign-in.');
+        setBusy(false);
+        return;
+      }
+    } else if (user.hasPin) {
+      patch.pin = '';
+    }
+
     try {
-      await updateProfile({ displayName: displayName.trim(), avatar });
+      await updateProfile(patch);
+      setPin('');
       setSaved(true);
     } catch (err) {
       setError(err.message);
@@ -72,6 +91,38 @@ export default function Profile() {
           <span className="field-label">Avatar</span>
           <AvatarPicker value={avatar} onChange={setAvatar} palette={palette} name={displayName.trim() || user.username} />
         </div>
+
+        <div className="field pin-toggle-field">
+          <label className="mgmt-row mgmt-row-toggle">
+            <input type="checkbox" checked={pinEnabled} onChange={(e) => setPinEnabled(e.target.checked)} />
+            <div className="mgmt-main">
+              <strong>Require a PIN to sign in</strong>
+              <span className="mgmt-sub">On the login screen you&apos;ll tap your profile and enter a 4-digit PIN.</span>
+            </div>
+          </label>
+        </div>
+
+        {pinEnabled && (
+          <label className="field">
+            <span className="field-label">PIN (4 digits)</span>
+            <input
+              type="password"
+              className="pin-field"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
+              maxLength={4}
+              value={pin}
+              placeholder={user.hasPin ? 'Leave blank to keep your current PIN' : 'e.g. 1234'}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+            />
+            <span className="field-hint">
+              {user.hasPin
+                ? 'A PIN is set. Leave it blank to keep it, or type a new one.'
+                : 'Without a PIN, tapping your profile signs you straight in.'}
+            </span>
+          </label>
+        )}
 
         {error && <div className="banner banner-error">{error}</div>}
         {saved && <div className="banner banner-ok">Profile saved.</div>}
